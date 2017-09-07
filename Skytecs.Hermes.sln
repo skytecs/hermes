@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Skytecs.Hermes", "Skytecs.Hermes\Skytecs.Hermes.csproj", "{EACFF7F1-DA05-4F66-AC8D-058FBA4FD638}"
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Skytecs.Hermes.Setup", "Skytecs.Hermes.Setup\Skytecs.Hermes.Setup.wixproj", "{05F7109F-1E50-4E49-A4EC-98764350FA76}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,12 @@ Global
 		{EACFF7F1-DA05-4F66-AC8D-058FBA4FD638}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EACFF7F1-DA05-4F66-AC8D-058FBA4FD638}.Release|x86.ActiveCfg = Release|Any CPU
 		{EACFF7F1-DA05-4F66-AC8D-058FBA4FD638}.Release|x86.Build.0 = Release|Any CPU
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Debug|x86.ActiveCfg = Debug|x86
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Debug|x86.Build.0 = Debug|x86
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Release|Any CPU.ActiveCfg = Release|x86
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Release|x86.ActiveCfg = Release|x86
+		{05F7109F-1E50-4E49-A4EC-98764350FA76}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

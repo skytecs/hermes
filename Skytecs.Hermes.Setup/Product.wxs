@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?define Name="Hermes" ?>
+<?define UpgradeCode="{1240E0CD-B3D2-44A7-B064-11B3C0709D69}" ?>
+<?define SourcePath="$(var.Skytecs.Hermes.TargetDir)"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include ..\.build\Version.wxi ?>
+
+  <Product Id="*"
+           Name="$(var.Name)"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="www.mypatients.ru"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"  InstallPrivileges="elevated"/>
+
+    <!-- Create a folder inside Talk Sharp called Test Service -->
+    <!-- WTF?? -->
+    <!--<Media Id="1" Cabinet="TestService.cab" EmbedCab="yes" />-->
+
+    <Upgrade Id="$(var.UpgradeCode)">
+      <UpgradeVersion OnlyDetect="no" Property="PREVIOUSFOUND" Minimum="0.0.0.0" IncludeMinimum="yes"
+							Maximum="$(var.Version)" IncludeMaximum="no" />
+      <UpgradeVersion OnlyDetect="yes" Property="NEWERFOUND" Minimum="$(var.Version)"
+							IncludeMinimum="yes" />
+    </Upgrade>
+    <MajorUpgrade AllowDowngrades="no" DowngradeErrorMessage="No downgrades, please!" AllowSameVersionUpgrades="yes" />
+
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="MyPatients" Name="MyPatients">
+          <Directory Id="INSTALLLOCATION" Name="$(var.Name)">
+
+            <Component Id="MainProduct" Guid="416A22A9-33F6-4FB3-91E6-DA2F63CC4CE3">
+              <File Id="Skytecs.Hermes.exe" Source="$(var.SourcePath)\Skytecs.Hermes.exe" DiskId="1" KeyPath="yes"/>
+              <File Id="Skytecs.Hermes.exe.config" Source="$(var.SourcePath)\Skytecs.Hermes.exe.config" DiskId="1"/>
+              <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" DiskId="1" />
+              <File Id="app.config" Source="$(var.SourcePath)\app.config" DiskId="1" />
+              <File Id="nlog.config" Source="$(var.SourcePath)\nlog.config" DiskId="1" />
+              
+              <!--
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
+              -->
+              
+              <File Id="Interop.FprnM1C.dll" Source="$(var.SourcePath)\Interop.FprnM1C.dll" DiskId="1" />                                    
+              <File Id="libuv.dll" Source="$(var.SourcePath)\libuv.dll" DiskId="1" />                                              
+              <File Id="Microsoft.AI.Agent.Intercept.dll" Source="$(var.SourcePath)\Microsoft.AI.Agent.Intercept.dll" DiskId="1" />                       
+              <File Id="Microsoft.AI.DependencyCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.DependencyCollector.dll" DiskId="1" />                   
+              <File Id="Microsoft.AI.PerfCounterCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.PerfCounterCollector.dll" DiskId="1" />                  
+              <File Id="Microsoft.AI.ServerTelemetryChannel.dll" Source="$(var.SourcePath)\Microsoft.AI.ServerTelemetryChannel.dll" DiskId="1" />                
+              <File Id="Microsoft.ApplicationInsights.AspNetCore.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.AspNetCore.dll" DiskId="1" />            
+              <File Id="Microsoft.ApplicationInsights.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.dll" DiskId="1" />                       
+              <File Id="Microsoft.AspNetCore.Antiforgery.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Antiforgery.dll" DiskId="1" />                    
+              <File Id="Microsoft.AspNetCore.Authorization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Authorization.dll" DiskId="1" />                  
+              <File Id="Microsoft.AspNetCore.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cors.dll" DiskId="1" />                           
+              <File Id="Microsoft.AspNetCore.Cryptography.Internal.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cryptography.Internal.dll" DiskId="1" />          
+              <File Id="Microsoft.AspNetCore.DataProtection.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.Abstractions.dll" DiskId="1" />    
+              <File Id="Microsoft.AspNetCore.DataProtection.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.dll" DiskId="1" />                 
+              <File Id="Microsoft.AspNetCore.Diagnostics.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.Abstractions.dll" DiskId="1" />       
+              <File Id="Microsoft.AspNetCore.Diagnostics.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.dll" DiskId="1" />                    
+              <File Id="Microsoft.AspNetCore.Hosting.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Abstractions.dll" DiskId="1" />           
+              <File Id="Microsoft.AspNetCore.Hosting.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.dll" DiskId="1" />                       
+              <File Id="Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" DiskId="1" />   
+              <File Id="Microsoft.AspNetCore.Hosting.WindowsServices.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.WindowsServices.dll" DiskId="1" />       
+              <File Id="Microsoft.AspNetCore.Html.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Html.Abstractions.dll" DiskId="1" />             
+              <File Id="Microsoft.AspNetCore.Http.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Abstractions.dll" DiskId="1" />             
+              <File Id="Microsoft.AspNetCore.Http.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.dll" DiskId="1" />                          
+              <File Id="Microsoft.AspNetCore.Http.Extensions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Extensions.dll" DiskId="1" />               
+              <File Id="Microsoft.AspNetCore.Http.Features.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Features.dll" DiskId="1" />                 
+              <File Id="Microsoft.AspNetCore.HttpOverrides.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.HttpOverrides.dll" DiskId="1" />                 
+              <File Id="Microsoft.AspNetCore.JsonPatch.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.JsonPatch.dll" DiskId="1" />                     
+              <File Id="Microsoft.AspNetCore.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Localization.dll" DiskId="1" />                  
+              <File Id="Microsoft.AspNetCore.Mvc.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Abstractions.dll" DiskId="1" />              
+              <File Id="Microsoft.AspNetCore.Mvc.ApiExplorer.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.ApiExplorer.dll" DiskId="1" />               
+              <File Id="Microsoft.AspNetCore.Mvc.Core.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Core.dll" DiskId="1" />                      
+              <File Id="Microsoft.AspNetCore.Mvc.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Cors.dll" DiskId="1" />                      
+              <File Id="Microsoft.AspNetCore.Mvc.DataAnnotations.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.DataAnnotations.dll" DiskId="1" />           
+              <File Id="Microsoft.AspNetCore.Mvc.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.dll" DiskId="1" />                           
+              <File Id="Microsoft.AspNetCore.Mvc.Formatters.Json.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Formatters.Json.dll" DiskId="1" />           
+              <File Id="Microsoft.AspNetCore.Mvc.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Localization.dll" DiskId="1" />              
+              <File Id="Microsoft.AspNetCore.Mvc.Razor.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.dll" DiskId="1" />                     
+              <File Id="Microsoft.AspNetCore.Mvc.Razor.Host.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.Host.dll" DiskId="1" />                
+              <File Id="Microsoft.AspNetCore.Mvc.TagHelpers.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.TagHelpers.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.ViewFeatures.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.ViewFeatures.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Razor.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Razor.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Razor.Runtime.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Razor.Runtime.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.ResponseCaching.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.ResponseCaching.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Routing.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Routing.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Routing.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Routing.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Server.IISIntegration.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Server.IISIntegration.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Server.Kestrel.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Server.Kestrel.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.WebUtilities.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.WebUtilities.dll" DiskId="1" />
+              <File Id="Microsoft.CodeAnalysis.CSharp.dll" Source="$(var.SourcePath)\Microsoft.CodeAnalysis.CSharp.dll" DiskId="1" />
+              <File Id="Microsoft.CodeAnalysis.dll" Source="$(var.SourcePath)\Microsoft.CodeAnalysis.dll" DiskId="1" />
+              <File Id="Microsoft.DotNet.PlatformAbstractions.dll" Source="$(var.SourcePath)\Microsoft.DotNet.PlatformAbstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Caching.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Caching.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Caching.Memory.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Caching.Memory.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.Binder.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.Binder.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.EnvironmentVariables.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.EnvironmentVariables.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.FileExtensions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.FileExtensions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Configuration.Json.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Configuration.Json.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.DependencyInjection.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.DependencyInjection.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.DependencyInjection.dll" Source="$(var.SourcePath)\Microsoft.Extensions.DependencyInjection.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.DependencyModel.dll" Source="$(var.SourcePath)\Microsoft.Extensions.DependencyModel.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.DiagnosticAdapter.dll" Source="$(var.SourcePath)\Microsoft.Extensions.DiagnosticAdapter.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.FileProviders.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.FileProviders.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.FileProviders.Composite.dll" Source="$(var.SourcePath)\Microsoft.Extensions.FileProviders.Composite.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.FileProviders.Physical.dll" Source="$(var.SourcePath)\Microsoft.Extensions.FileProviders.Physical.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.FileSystemGlobbing.dll" Source="$(var.SourcePath)\Microsoft.Extensions.FileSystemGlobbing.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Globalization.CultureInfoCache.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Globalization.CultureInfoCache.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Localization.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Localization.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Localization.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Localization.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Logging.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Logging.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Logging.Console.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Logging.Console.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Logging.Debug.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Logging.Debug.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Logging.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Logging.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.ObjectPool.dll" Source="$(var.SourcePath)\Microsoft.Extensions.ObjectPool.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Options.ConfigurationExtensions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Options.ConfigurationExtensions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Options.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Options.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.PlatformAbstractions.dll" Source="$(var.SourcePath)\Microsoft.Extensions.PlatformAbstractions.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.Primitives.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Primitives.dll" DiskId="1" />
+              <File Id="Microsoft.Extensions.WebEncoders.dll" Source="$(var.SourcePath)\Microsoft.Extensions.WebEncoders.dll" DiskId="1" />
+              <File Id="Microsoft.Net.Http.Headers.dll" Source="$(var.SourcePath)\Microsoft.Net.Http.Headers.dll" DiskId="1" />
+              <File Id="Microsoft.PointOfService.ControlBase.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.ControlBase.dll" DiskId="1" />
+              <File Id="Microsoft.PointOfService.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.dll" DiskId="1" />
+              <File Id="Microsoft.Win32.Primitives.dll" Source="$(var.SourcePath)\Microsoft.Win32.Primitives.dll" DiskId="1" />
+              <File Id="Newtonsoft.Json.dll" Source="$(var.SourcePath)\Newtonsoft.Json.dll" DiskId="1" />
+              <File Id="NLog.dll" Source="$(var.SourcePath)\NLog.dll" DiskId="1" />
+              <File Id="NLog.Extensions.Logging.dll" Source="$(var.SourcePath)\NLog.Extensions.Logging.dll" DiskId="1" />
+              <File Id="NLog.Web.AspNetCore.dll" Source="$(var.SourcePath)\NLog.Web.AspNetCore.dll" DiskId="1" />
+              <File Id="RestSharp.dll" Source="$(var.SourcePath)\RestSharp.dll" DiskId="1" />
+              <File Id="System.AppContext.dll" Source="$(var.SourcePath)\System.AppContext.dll" DiskId="1" />
+              <File Id="System.Buffers.dll" Source="$(var.SourcePath)\System.Buffers.dll" DiskId="1" />
+              <File Id="System.Collections.Immutable.dll" Source="$(var.SourcePath)\System.Collections.Immutable.dll" DiskId="1" />
+              <File Id="System.ComponentModel.Primitives.dll" Source="$(var.SourcePath)\System.ComponentModel.Primitives.dll" DiskId="1" />
+              <File Id="System.ComponentModel.TypeConverter.dll" Source="$(var.SourcePath)\System.ComponentModel.TypeConverter.dll" DiskId="1" />
+              <File Id="System.Console.dll" Source="$(var.SourcePath)\System.Console.dll" DiskId="1" />
+              <File Id="System.Diagnostics.DiagnosticSource.dll" Source="$(var.SourcePath)\System.Diagnostics.DiagnosticSource.dll" DiskId="1" />
+              <File Id="System.Diagnostics.FileVersionInfo.dll" Source="$(var.SourcePath)\System.Diagnostics.FileVersionInfo.dll" DiskId="1" />
+              <File Id="System.Diagnostics.StackTrace.dll" Source="$(var.SourcePath)\System.Diagnostics.StackTrace.dll" DiskId="1" />
+              <File Id="System.Globalization.Calendars.dll" Source="$(var.SourcePath)\System.Globalization.Calendars.dll" DiskId="1" />
+              <File Id="System.IO.Compression.dll" Source="$(var.SourcePath)\System.IO.Compression.dll" DiskId="1" />
+              <File Id="System.IO.Compression.ZipFile.dll" Source="$(var.SourcePath)\System.IO.Compression.ZipFile.dll" DiskId="1" />
+              <File Id="System.IO.FileSystem.dll" Source="$(var.SourcePath)\System.IO.FileSystem.dll" DiskId="1" />
+              <File Id="System.IO.FileSystem.Primitives.dll" Source="$(var.SourcePath)\System.IO.FileSystem.Primitives.dll" DiskId="1" />
+              <File Id="System.Net.Http.dll" Source="$(var.SourcePath)\System.Net.Http.dll" DiskId="1" />
+              <File Id="System.Net.Sockets.dll" Source="$(var.SourcePath)\System.Net.Sockets.dll" DiskId="1" />
+              <File Id="System.Numerics.Vectors.dll" Source="$(var.SourcePath)\System.Numerics.Vectors.dll" DiskId="1" />
+              <File Id="System.Reflection.Metadata.dll" Source="$(var.SourcePath)\System.Reflection.Metadata.dll" DiskId="1" />
+              <File Id="System.Runtime.CompilerServices.Unsafe.dll" Source="$(var.SourcePath)\System.Runtime.CompilerServices.Unsafe.dll" DiskId="1" />
+              <File Id="System.Runtime.InteropServices.RuntimeInformation.dll" Source="$(var.SourcePath)\System.Runtime.InteropServices.RuntimeInformation.dll" DiskId="1" />
+              <File Id="System.Security.Cryptography.Algorithms.dll" Source="$(var.SourcePath)\System.Security.Cryptography.Algorithms.dll" DiskId="1" />
+              <File Id="System.Security.Cryptography.Encoding.dll" Source="$(var.SourcePath)\System.Security.Cryptography.Encoding.dll" DiskId="1" />
+              <File Id="System.Security.Cryptography.Primitives.dll" Source="$(var.SourcePath)\System.Security.Cryptography.Primitives.dll" DiskId="1" />
+              <File Id="System.Security.Cryptography.X509Certificates.dll" Source="$(var.SourcePath)\System.Security.Cryptography.X509Certificates.dll" DiskId="1" />
+              <File Id="System.Text.Encoding.CodePages.dll" Source="$(var.SourcePath)\System.Text.Encoding.CodePages.dll" DiskId="1" />
+              <File Id="System.Text.Encodings.Web.dll" Source="$(var.SourcePath)\System.Text.Encodings.Web.dll" DiskId="1" />
+              <File Id="System.Threading.Tasks.Extensions.dll" Source="$(var.SourcePath)\System.Threading.Tasks.Extensions.dll" DiskId="1" />
+              <File Id="System.Threading.Thread.dll" Source="$(var.SourcePath)\System.Threading.Thread.dll" DiskId="1" />
+              <File Id="System.ValueTuple.dll" Source="$(var.SourcePath)\System.ValueTuple.dll" DiskId="1" />
+              <File Id="System.Xml.ReaderWriter.dll" Source="$(var.SourcePath)\System.Xml.ReaderWriter.dll" DiskId="1" />
+              <File Id="System.Xml.XmlDocument.dll" Source="$(var.SourcePath)\System.Xml.XmlDocument.dll" DiskId="1" />
+              <File Id="System.Xml.XPath.dll" Source="$(var.SourcePath)\System.Xml.XPath.dll" DiskId="1" />
+              <File Id="System.Xml.XPath.XDocument.dll" Source="$(var.SourcePath)\System.Xml.XPath.XDocument.dll" DiskId="1" />
+
+              <!-- Tell WiX to install the Service -->
+              <ServiceInstall Id="ServiceInstaller"
+                              Type="ownProcess"
+                              Name="$(var.Name)"
+                              DisplayName="$(var.Name)"
+                              Description="A Test Service that logs dummy text on an interval to a text file."
+                              Start="auto"                              
+                              Interactive="yes"
+                              Account="LocalSystem"
+                              ErrorControl="normal" />
+              <!-- Tell WiX to start the Service -->
+              <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="$(var.Name)" Wait="yes" />
+
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+
+    <Feature Id="ServiceFeature" Title="Service for cashbox devices" Level="1">
+      <ComponentRef Id="MainProduct" />
+    </Feature>
+  </Product>
+
+</Wix>
+
