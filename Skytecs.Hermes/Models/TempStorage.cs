@@ -30,7 +30,7 @@ namespace Skytecs.Hermes.Models
 
         public CashierSession Get()
         {
-            if (_session == null)
+            if (_session == null && File.Exists(_path))
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(CashierSession));
                 using (StreamReader reader = new StreamReader(_path))

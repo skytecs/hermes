@@ -100,18 +100,16 @@ namespace Skytecs.Hermes.Services
 
                 SetCachier(session.CashierName);
 
-                _logger.Info("Открытие смены");
-
-                if (_printer.OpenSession() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось открыть сессию для кассира {session.CashierId} ({session.CashierName}).  \n{_printer.ResultCode} - { _printer.ResultDescription}");
-                }
                 session.SessionStart = DateTime.Now;
 
-                _logger.Info("Смена открыта успешно");
-                _logger.Info("Сохранение информации об открытой смене");
                 _sessionStorage.Set(session);
-                _logger.Info("Информация об открытой смене успешно сохранена");
+
+                _logger.Info("Открытие смены");
+                if (_printer.OpenSession() != 0)
+                {
+                    _sessionStorage.Remove();
+                    throw new InvalidOperationException($"Не удалось открыть сессию для кассира {session.CashierId} ({session.CashierName}).  \n{_printer.ResultCode} - { _printer.ResultDescription}");
+                }
             }
 
             if (_printer.ResetMode() != 0)
