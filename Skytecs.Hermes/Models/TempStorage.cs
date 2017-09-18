@@ -1,25 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
-using System.Xml;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Xml.Serialization;
+using Skytecs.Hermes.Utilities;
 
 namespace Skytecs.Hermes.Models
 {
     public class TempStorage : ISessionStorage
     {
+        private static readonly XmlSerializer SessionSerializer = new XmlSerializer(typeof(CashierSession));
+
         private CashierSession _session;
 
-        private readonly string _path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Session.xml");
+        private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Skytecs", "Hermes", "Session.xml");
+
+        static TempStorage()
+        {
+            var rules = new DirectorySecurity();
+
+            var localUsers = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+
+            rules.AddAccessRule(new FileSystemAccessRule(localUsers, FileSystemRights.FullControl, AccessControlType.Allow));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath), rules);
+        }
 
         public CashierSession Set(CashierSession session)
         {
-            using (var file = System.IO.File.Create(_path))
+            Check.NotNull(session, nameof(session));
+
+            using (var file = File.Create(FilePath))
             {
-                new XmlSerializer(session.GetType()).Serialize(file, session);
+                SessionSerializer.Serialize(file, session);
             }
 
             _session = session;
@@ -30,12 +44,11 @@ namespace Skytecs.Hermes.Models
 
         public CashierSession Get()
         {
-            if (_session == null && File.Exists(_path))
+            if (_session == null && File.Exists(FilePath))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(CashierSession));
-                using (StreamReader reader = new StreamReader(_path))
+                using (StreamReader reader = new StreamReader(FilePath))
                 {
-                    _session = (CashierSession)serializer.Deserialize(reader);
+                    _session = (CashierSession)SessionSerializer.Deserialize(reader);
                 }
             }
 
@@ -44,9 +57,9 @@ namespace Skytecs.Hermes.Models
 
         public void Remove()
         {
-            if (File.Exists(_path))
+            if (File.Exists(FilePath))
             {
-                File.Delete(_path);
+                File.Delete(FilePath);
             }
 
             _session = null;

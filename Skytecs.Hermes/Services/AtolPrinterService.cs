@@ -26,8 +26,7 @@ namespace Skytecs.Hermes.Services
 
             _logger.Info("Инициализация сервиса печати чеков Атол");
 
-            _printer = new FprnM45Class();
-            _printer.DeviceEnabled = true;
+            _printer = new FprnM45Class {DeviceEnabled = true};
 
             _logger.Info("Проверка состояния ККМ");
             if (_printer.GetStatus() != 0)

@@ -178,7 +178,7 @@
                               Type="ownProcess"
                               Name="$(var.Name)"
                               DisplayName="$(var.Name)"
-                              Description="A Test Service that logs dummy text on an interval to a text file."
+                              Description="Windows service which provides API for connected fiscal printers."
                               Start="auto"                              
                               Interactive="yes"
                               Account="LocalSystem"
