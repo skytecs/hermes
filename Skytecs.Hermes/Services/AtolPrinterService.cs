@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace Skytecs.Hermes.Services
 {
@@ -16,9 +17,10 @@ namespace Skytecs.Hermes.Services
         private readonly ILogger<AtolPrinterService> _logger;
         private readonly ISessionStorage _sessionStorage;
 
-        public AtolPrinterService(ILogger<AtolPrinterService> logger, ISessionStorage sessionStorage)
+        public AtolPrinterService(ILogger<AtolPrinterService> logger, ISessionStorage sessionStorage, IOptions<FiscalPrinterSettings> config)
         {
             Check.NotNull(logger, nameof(logger));
+            Check.NotNull(config, nameof(config));
             Check.NotNull(sessionStorage, nameof(sessionStorage));
 
             _logger = logger;
@@ -26,7 +28,12 @@ namespace Skytecs.Hermes.Services
 
             _logger.Info("Инициализация сервиса печати чеков Атол");
 
-            _printer = new FprnM45Class {DeviceEnabled = true};
+            _printer = new FprnM45Class();
+
+            _printer.PortNumber = config.Value.Port;
+            _printer.Model = config.Value.DeviceId;
+
+            _printer.DeviceEnabled = true;
 
             _logger.Info("Проверка состояния ККМ");
             if (_printer.GetStatus() != 0)
@@ -52,7 +59,15 @@ namespace Skytecs.Hermes.Services
             _logger.Info("Инициализация сервиса печати чеков Атол завершена");
         }
 
-        public SessionOpeningStatus OpenSession(int cashierId, string cashierName)
+        public void CheckConnection()
+        {
+            if (_printer.GetStatus() != 0)
+            {
+                throw new InvalidOperationException($"Неверное состояние ККМ: {_printer.GetLastError()}");
+            }
+        }
+
+        public void OpenSession(int cashierId, string cashierName)
         {
 
             _logger.Info($"Попытка открытия смены для кассира {cashierId} ({cashierName})");
@@ -115,12 +130,13 @@ namespace Skytecs.Hermes.Services
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{_printer.ResultCode} - { _printer.ResultDescription}");
             }
-
-            return SessionOpeningStatus.Success;
         }
 
-        public PrinterOperationStatus PrintReceipt(Receipt receipt)
+        public void PrintReceipt(Receipt receipt)
         {
+            Check.NotNull(receipt, nameof(receipt));
+            Check.NotNull(receipt.Sum, nameof(receipt.Sum));
+
             _logger.Info("Печать чека начата");
 
             _logger.Info("Проверка статуса смены");
@@ -212,11 +228,13 @@ namespace Skytecs.Hermes.Services
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{_printer.ResultCode} - { _printer.ResultDescription}");
             }
-            return PrinterOperationStatus.Success;
         }
 
-        public PrinterOperationStatus PrintRefund(Receipt receipt)
+        public void PrintRefund(Receipt receipt)
         {
+            Check.NotNull(receipt, nameof(receipt));
+            Check.NotNull(receipt.Sum, nameof(receipt.Sum));
+
             _logger.Info("Печать чека начата");
 
             _logger.Info("Проверка статуса смены");
@@ -295,11 +313,10 @@ namespace Skytecs.Hermes.Services
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{_printer.ResultCode} - { _printer.ResultDescription}");
             }
-            return PrinterOperationStatus.Success;
-
+            
         }
 
-        public ZReportStatus PrintZReport()
+        public void PrintZReport()
         {
             _logger.Info("Снятие Z-отчета с закрытием смены");
             _logger.Info("Проверка статуса текущей смены");
@@ -307,23 +324,23 @@ namespace Skytecs.Hermes.Services
             {
                 _logger.Info("Текущая смена уже закрыта");
                 _sessionStorage.Remove();
-                return ZReportStatus.Success;
+                return;
             }
             _logger.Info("Текущая смены открыта");
 
             _logger.Info("Получение информации по текущей смене");
             var session = _sessionStorage.Get();
-            if (session == null)
+            if (session != null)
             {
-                throw new InvalidOperationException("Информация по текущей смене не найдена");
-            }
-            _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
+                _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
 
-            SetCachier(session.CashierName);
+                SetCachier(session.CashierName);
+            }
 
             _logger.Info("Переход в режим 3 для снятия z-отчета");
             _printer.Password = "30";
             _printer.Mode = 3;
+
             if (_printer.SetMode() != 0)
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим 3. \n{_printer.ResultCode} - { _printer.ResultDescription}");
@@ -331,6 +348,7 @@ namespace Skytecs.Hermes.Services
 
             _logger.Info("Печать z-отчета");
             _printer.ReportType = 1;
+
             if (_printer.Report() != 0)
             {
                 throw new InvalidOperationException($"Не удалось сформировать отчет типа 3. \n{_printer.ResultCode} - { _printer.ResultDescription}");
@@ -345,11 +363,9 @@ namespace Skytecs.Hermes.Services
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{_printer.ResultCode} - { _printer.ResultDescription}");
             }
-
-            return ZReportStatus.Success;
         }
 
-        public ZReportStatus PrintXReport()
+        public void PrintXReport()
         {
             _logger.Info("Снятие X-отчета с закрытием смены");
             _logger.Info("Проверка статуса текущей смены");
@@ -391,11 +407,9 @@ namespace Skytecs.Hermes.Services
             {
                 throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{_printer.ResultCode} - { _printer.ResultDescription}");
             }
-
-            return ZReportStatus.Success;
         }
 
-        public int PrintItem(RecItem item)
+        private int PrintItem(RecItem item)
         {
             _printer.Name = item.Description;
             _printer.Price = (double)item.UnitPrice;
@@ -420,7 +434,7 @@ namespace Skytecs.Hermes.Services
             return _printer.Registration();
         }
 
-        public int PrintRefundItem(RecItem item)
+        private int PrintRefundItem(RecItem item)
         {
             _printer.Name = item.Description;
             _printer.Price = (double)item.UnitPrice;

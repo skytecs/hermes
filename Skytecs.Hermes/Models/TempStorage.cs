@@ -20,10 +20,18 @@ namespace Skytecs.Hermes.Models
         {
             var rules = new DirectorySecurity();
 
-            var localUsers = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+            rules.SetAccessRuleProtection(false, true);
 
-            rules.AddAccessRule(new FileSystemAccessRule(localUsers, FileSystemRights.FullControl, AccessControlType.Allow));
+            var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+            var admins = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+            var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
 
+            rules.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.NoPropagateInherit, AccessControlType.Allow));
+            rules.AddAccessRule(new FileSystemAccessRule(admins, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.NoPropagateInherit, AccessControlType.Allow));
+            rules.AddAccessRule(new FileSystemAccessRule(system, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.NoPropagateInherit, AccessControlType.Allow));
+            //rules.AddAccessRule(new FileSystemAccessRule(localUsers, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.InheritOnly, AccessControlType.Allow));
+           
+            
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath), rules);
         }
 

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Skytecs.Hermes.Services;
 using Skytecs.Hermes.Utilities;
@@ -9,7 +6,6 @@ using Skytecs.Hermes.Models;
 using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 
 namespace Skytecs.Hermes.Controllers
 {
@@ -95,6 +91,21 @@ namespace Skytecs.Hermes.Controllers
             try
             {
                 _fiscalPrinterService.PrintXReport();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e);
+                return StatusCode((int)HttpStatusCode.InternalServerError, e.Message);
+            }
+        }
+
+        [Route("api/check")]
+        public IActionResult CheckConnection()
+        {
+            try
+            {
+                _fiscalPrinterService.CheckConnection();
                 return Ok();
             }
             catch (Exception e)

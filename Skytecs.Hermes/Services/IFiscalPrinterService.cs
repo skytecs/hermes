@@ -8,10 +8,11 @@ namespace Skytecs.Hermes.Services
 {
     public interface IFiscalPrinterService : IDisposable
     {
-        SessionOpeningStatus OpenSession(int cashierId, string cashierName);
-        PrinterOperationStatus PrintReceipt(Receipt reciept);
-        PrinterOperationStatus PrintRefund(Receipt receipt);
-        ZReportStatus PrintZReport();
-        ZReportStatus PrintXReport();
+        void OpenSession(int cashierId, string cashierName);
+        void PrintReceipt(Receipt reciept);
+        void PrintRefund(Receipt receipt);
+        void PrintZReport();
+        void PrintXReport();
+        void CheckConnection();
     }
 }

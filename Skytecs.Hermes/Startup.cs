@@ -18,7 +18,7 @@ namespace Skytecs.Hermes
 {
     public class Startup
     {
-        private IOptions<AppConfig> _config;
+        private IOptions<ServiceSettings> _config;
 
         public Startup(IHostingEnvironment env)
         {
@@ -42,11 +42,12 @@ namespace Skytecs.Hermes
             services.AddTransient<IFiscalPrinterService, AtolPrinterService>();
             services.AddTransient<ISessionStorage, TempStorage>();
             services.AddMvc();
-            services.Configure<AppConfig>(Configuration);
+            services.Configure<FiscalPrinterSettings>(Configuration);
+            services.Configure<ServiceSettings>(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IOptions<AppConfig> config)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IOptions<ServiceSettings> config)
         {
             _config = config;
 

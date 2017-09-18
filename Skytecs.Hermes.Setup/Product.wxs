@@ -172,6 +172,7 @@
               <File Id="System.Xml.XmlDocument.dll" Source="$(var.SourcePath)\System.Xml.XmlDocument.dll" DiskId="1" />
               <File Id="System.Xml.XPath.dll" Source="$(var.SourcePath)\System.Xml.XPath.dll" DiskId="1" />
               <File Id="System.Xml.XPath.XDocument.dll" Source="$(var.SourcePath)\System.Xml.XPath.XDocument.dll" DiskId="1" />
+              <File Id="WeblogTarget.dll" Source="$(var.SourcePath)\WeblogTarget.dll" DiskId="1" />
 
               <!-- Tell WiX to install the Service -->
               <ServiceInstall Id="ServiceInstaller"

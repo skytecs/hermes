@@ -28,9 +28,11 @@ namespace Skytecs.Hermes
                 //.UseApplicationInsights()
                 .Build();
 
-            //host.Run();
+#if DEBUG
+            host.Run();
+#else
             host.RunAsService();
-
+#endif
         }
     }
 }
