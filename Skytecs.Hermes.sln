@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.3
+VisualStudioVersion = 15.0.26730.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Skytecs.Hermes", "Skytecs.Hermes\Skytecs.Hermes.csproj", "{EACFF7F1-DA05-4F66-AC8D-058FBA4FD638}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Skytecs.Hermes.Setup", "Skytecs.Hermes.Setup\Skytecs.Hermes.Setup.wixproj", "{05F7109F-1E50-4E49-A4EC-98764350FA76}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{3230A78A-5A18-4DC9-B64D-2DE8D9936BFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

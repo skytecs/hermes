@@ -37,14 +37,6 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.PointOfService">
-      <HintPath>..\lib\Microsoft.PointOfService.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.PointOfService.ControlBase">
-      <HintPath>..\lib\Microsoft.PointOfService.ControlBase.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
