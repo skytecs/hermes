@@ -116,5 +116,20 @@ namespace Skytecs.Hermes.Controllers
             }
         }
 
+        [Route("api/printLabels")]
+        public IActionResult PrintLabels(string labels)
+        {
+            try
+            {
+
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e);
+                return StatusCode((int)HttpStatusCode.InternalServerError, e.Message);
+            }
+        }
+
     }
 } 
