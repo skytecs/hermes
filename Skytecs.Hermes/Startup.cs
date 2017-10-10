@@ -13,6 +13,8 @@ using Skytecs.Hermes.Services;
 using Skytecs.Hermes.Models;
 using Skytecs.Hermes.Utilities;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Cors.Internal;
 
 namespace Skytecs.Hermes
 {
@@ -41,6 +43,7 @@ namespace Skytecs.Hermes
         {
             services.AddTransient<IFiscalPrinterService, AtolPrinterService>();
             services.AddTransient<ISessionStorage, TempStorage>();
+            services.AddCors();
             services.AddMvc();
             services.Configure<FiscalPrinterSettings>(Configuration);
             services.Configure<ServiceSettings>(Configuration);
@@ -54,13 +57,12 @@ namespace Skytecs.Hermes
             loggerFactory.AddConsole();
             loggerFactory.AddNLog();
             app.AddNLogWeb();
-            
-            app.UseMiddleware<BasicAuthenticationMiddleware>(_config.Value.Password);
 
+            app.UseMiddleware<BasicAuthenticationMiddleware>(_config.Value.Password);
+            app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 
             app.UseMvc();
             app.UseDeveloperExceptionPage();
-
 
         }
     }

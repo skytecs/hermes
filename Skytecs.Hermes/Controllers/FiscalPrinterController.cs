@@ -6,6 +6,7 @@ using Skytecs.Hermes.Models;
 using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 
 namespace Skytecs.Hermes.Controllers
 {

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Skytecs.Hermes.Utilities
 {
-    public class BasicAuthenticationMiddleware 
+    public class BasicAuthenticationMiddleware
     {
         private readonly ILogger<BasicAuthenticationMiddleware> _logger;
         private readonly RequestDelegate _next;
@@ -26,6 +26,11 @@ namespace Skytecs.Hermes.Utilities
 
         public Task Invoke(HttpContext context)
         {
+            if (context.Request.Method == "OPTIONS")
+            {
+                return _next(context);
+            }
+
             string authHeader = context.Request.Headers["Authorization"];
 
             try
@@ -49,7 +54,7 @@ namespace Skytecs.Hermes.Utilities
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _logger.Error(e);
             }
