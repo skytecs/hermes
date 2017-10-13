@@ -115,21 +115,5 @@ namespace Skytecs.Hermes.Controllers
                 return StatusCode((int)HttpStatusCode.InternalServerError, e.Message);
             }
         }
-
-        [Route("api/printLabels")]
-        public IActionResult PrintLabels(string labels)
-        {
-            try
-            {
-
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                _logger.Error(e);
-                return StatusCode((int)HttpStatusCode.InternalServerError, e.Message);
-            }
-        }
-
     }
 } 
