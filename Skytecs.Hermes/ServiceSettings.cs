@@ -8,5 +8,6 @@ namespace Skytecs.Hermes
     public class ServiceSettings
     {
         public string Password { get; set; }
+        public string PrinterName { get; set; }
     }
 }
