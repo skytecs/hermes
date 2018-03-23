@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Skytecs.Hermes.Models
 {
+    [Serializable]
     public class Receipt
     {
         private ICollection<RecItem> _items { get; set; }

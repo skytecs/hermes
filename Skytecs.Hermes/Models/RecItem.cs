@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Skytecs.Hermes.Models
 {
+    [Serializable]
     public class RecItem
     {
         public string Description { get; set; }
