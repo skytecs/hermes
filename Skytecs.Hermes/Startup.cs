@@ -97,7 +97,7 @@ namespace Skytecs.Hermes
                 _clinicUrl = config.Value.ClinicUrl;
                 var client = app.ApplicationServices.GetService<CentrifugoClient>();
                 client.Connect()
-                    .ContinueWith(x => client.Subscribe(config.Value.CentrifugoChannel))
+                    .ContinueWith(x => client.Subscribe())
                     .ContinueWith(x => client.Listen(FiscalPrinterNotificationHandler));
 
             }
@@ -153,7 +153,7 @@ namespace Skytecs.Hermes
                 default:
                     throw new Exception($"Передан несуществующий метод '{notification.Method}'");
             }
-
+            
             client = new RestClient($"{_clinicUrl}/api/confirmOperation");
             
             request = new RestRequest(Method.POST);

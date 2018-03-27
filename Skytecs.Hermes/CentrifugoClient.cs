@@ -16,16 +16,14 @@ namespace Skytecs.Hermes
 {
     public class CentrifugoClient : IDisposable
     {
-        private object _consoleLock = new object();
+        private object _lock = new object();
         private const int _sendChunkSize = 256;
         private const int _receiveChunkSize = 256;
         private const bool _verbose = true;
         private readonly TimeSpan _delay = TimeSpan.FromMilliseconds(30000);
         private readonly IOptions<CentrifugoSettings> _settings;
         private readonly ILogger<CentrifugoClient> _logger;
-        private readonly string _uri;
-        private readonly string _secret;
-        private UTF8Encoding _encoder = new UTF8Encoding();
+        private Encoding _encoder = Encoding.UTF8;
         private ClientWebSocket _webSocket;
 
         public CentrifugoClient(ILogger<CentrifugoClient> logger, IOptions<CentrifugoSettings> settings)
@@ -59,7 +57,7 @@ namespace Skytecs.Hermes
             await Receive(_webSocket);
         }
 
-        public async Task Subscribe(string channel)
+        public async Task Subscribe()
         {
             Message message = new Message
             {
@@ -67,7 +65,7 @@ namespace Skytecs.Hermes
                 Method = CentrifugoMethods.Subscribe,
                 Parameters = new Parameters
                 {
-                    Channel = channel
+                    Channel = _settings.Value.CentrifugoChannel
                 }
             };
 
@@ -94,37 +92,52 @@ namespace Skytecs.Hermes
         public async Task Listen(Action<JObject> onMessageReceived)
         {
             _logger.Info("Listen");
-            byte[] buffer = new byte[_receiveChunkSize];
-            while (_webSocket.State == WebSocketState.Open)
+            while (true)
             {
-                var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                _logger.Info("Receive response");
-                if (result.MessageType == WebSocketMessageType.Close)
+                while (_webSocket.State == WebSocketState.Open)
                 {
-                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                    _logger.Warn($"Close: {Enum.GetName(typeof(WebSocketCloseStatus), result.CloseStatus)}, {result.CloseStatusDescription}");
-                }
-                else
-                {
-                    lock (_consoleLock)
+                    byte[] buffer = new byte[_receiveChunkSize];
+                    var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    _logger.Info("Receive response");
+                    if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        var data = _encoder.GetString(buffer);
-                        _logger.Info($"Response\n{data}");
-                        try
+                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                        _logger.Warn($"Close: {Enum.GetName(typeof(WebSocketCloseStatus), result.CloseStatus)}, {result.CloseStatusDescription}");
+                    }
+                    else
+                    {
+                        lock (_lock)
                         {
-                            var response = JsonConvert.DeserializeObject<Response>(data);
+                            var data = _encoder.GetString(buffer);
+                            _logger.Info($"Response\n{data}");
+                            try
+                            {
+                                var response = JsonConvert.DeserializeObject<Response>(data);
 
-                            onMessageReceived(response.Body.Data);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Error(e);
+                                onMessageReceived(response.Body.Data);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.Error(e);
+                            }
                         }
                     }
                 }
-            }
 
-            _logger.Info("Disconnceted?");
+                _logger.Info("Disconnceted! Try to reconnect...");
+
+                try
+                {
+                    await Connect();
+                    await Subscribe();
+
+                    _logger.Info("Reconnect was successful.");
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e);
+                }
+            }
         }
 
         public async Task Publish(string channel, string data)
@@ -226,7 +239,7 @@ namespace Skytecs.Hermes
         private void LogStatus(bool receiving, byte[] buffer, int length)
         {
 
-            lock (_consoleLock)
+            lock (_lock)
             {
                 //Console.ForegroundColor = receiving ? ConsoleColor.Green : ConsoleColor.Gray;
                 //Console.WriteLine("{0} ", receiving ? "Received" : "Sent"); 
