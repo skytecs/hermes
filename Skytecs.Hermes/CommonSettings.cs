@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 
 namespace Skytecs.Hermes
 {
-    public class ServiceSettings
+    public class CommonSettings
     {
         public string Password { get; set; }
+
+        public string ClinicUrl { get; set; }
     }
 }

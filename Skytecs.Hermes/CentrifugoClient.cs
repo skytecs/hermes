@@ -108,10 +108,11 @@ namespace Skytecs.Hermes
                     {
                         lock (_lock)
                         {
-                            var data = _encoder.GetString(buffer);
-                            _logger.Info($"Response\n{data}");
                             try
                             {
+                                var data = _encoder.GetString(buffer);
+                                _logger.Info($"Response\n{data}");
+
                                 var response = JsonConvert.DeserializeObject<Response>(data);
 
                                 onMessageReceived(response.Body.Data);

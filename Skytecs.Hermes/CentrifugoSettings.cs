@@ -10,6 +10,5 @@ namespace Skytecs.Hermes
         public string CentrifugoUrl { get; set; }
         public string CentrifugoSecret { get; set; }
         public string CentrifugoChannel { get; set; }
-        public string ClinicUrl { get; set; }
     }
 }

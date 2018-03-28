@@ -24,12 +24,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace Skytecs.Hermes
 {
     public class Startup
     {
-        private IOptions<ServiceSettings> _config;
+        private IOptions<CommonSettings> _config;
 
         public Startup(IHostingEnvironment env)
         {
@@ -41,8 +42,9 @@ namespace Skytecs.Hermes
 
             env.ConfigureNLog("nlog.config");
 
-
             Configuration = builder.Build();
+
+
         }
 
 
@@ -57,17 +59,26 @@ namespace Skytecs.Hermes
             services.AddCors();
             services.AddMvc();
             services.Configure<FiscalPrinterSettings>(Configuration);
-            services.Configure<ServiceSettings>(Configuration);
+            services.Configure<CommonSettings>(Configuration);
             services.Configure<CentrifugoSettings>(Configuration);
+
+            services.AddEntityFrameworkSqlite();
+            services.AddDbContext<DataContext>(options => options.UseSqlite(Configuration.GetConnectionString("CashboxDatabase")));
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IOptions<ServiceSettings> config)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IOptions<CommonSettings> config, DataContext context)
         {
             _config = config;
 
             loggerFactory.AddConsole();
             loggerFactory.AddNLog();
+
+            //db.Database.EnsureCreated();
+            context.Database.Migrate();
+
             app.AddNLogWeb();
 
             app.UseMiddleware<BasicAuthenticationMiddleware>(_config.Value.Password);
@@ -77,7 +88,6 @@ namespace Skytecs.Hermes
             app.UseDeveloperExceptionPage();
 
             app.StartCentrifugoListener();
-
         }
     }
 
@@ -86,6 +96,7 @@ namespace Skytecs.Hermes
         private static ILogger<CentrifugoClient> _logger;
         private static IFiscalPrinterService _fiscalPrinterService;
         private static string _clinicUrl;
+        private static DataContext _dataContext;
 
         public static IApplicationBuilder StartCentrifugoListener(this IApplicationBuilder app)
         {
@@ -93,12 +104,13 @@ namespace Skytecs.Hermes
             {
                 _logger = app.ApplicationServices.GetService<ILogger<CentrifugoClient>>();
                 _fiscalPrinterService = app.ApplicationServices.GetService<IFiscalPrinterService>();
-                var config = app.ApplicationServices.GetService<IOptions<CentrifugoSettings>>();
+                var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
                 _clinicUrl = config.Value.ClinicUrl;
                 var client = app.ApplicationServices.GetService<CentrifugoClient>();
                 client.Connect()
                     .ContinueWith(x => client.Subscribe())
                     .ContinueWith(x => client.Listen(FiscalPrinterNotificationHandler));
+                _dataContext = app.ApplicationServices.GetService<DataContext>();
 
             }
             catch (Exception e)
@@ -116,58 +128,92 @@ namespace Skytecs.Hermes
             }
             var notification = jsonData.ToObject<FiscalPrinterNotification>();
 
-            var client = new RestClient($"{_clinicUrl}/api/operation");
-
-            var request = new RestRequest(Method.GET);
-            request.AddHeader("cache-control", "no-cache");
-            request.AddQueryParameter("operationId", notification.OperationId.ToString());
-
-            IRestResponse response = client.Execute(request);
-            if (response.StatusCode != HttpStatusCode.OK)
+            try
             {
-                var message = String.IsNullOrEmpty(response.Content) ? response.ErrorMessage : response.Content;
-                throw new InvalidOperationException($"Не удалось получить данные операции '{notification.OperationId}': {response.StatusCode} - {message}");
-            }
+                var client = new RestClient($"{_clinicUrl}/api/operation");
 
-            var parameters = JToken.Parse(response.Content).ToString();
-            switch (notification.Method)
-            {
-                case "opensession":
-                    var openSessionData = JsonConvert.DeserializeObject<OpenSessionData>(parameters);
-                    _fiscalPrinterService.OpenSession(openSessionData.CashierId, openSessionData.CashierName);
-                    break;
-                case "receipt":
-                    var receipt = JsonConvert.DeserializeObject<Receipt>(parameters);
-                    _fiscalPrinterService.PrintReceipt(receipt);
-                    break;
-                case "refund":
-                    var refund = JsonConvert.DeserializeObject<Receipt>(parameters);
-                    _fiscalPrinterService.PrintRefund(refund);
-                    break;
-                case "xreport":
-                    _fiscalPrinterService.PrintXReport();
-                    break;
-                case "zreport":
-                    _fiscalPrinterService.PrintZReport();
-                    break;
-                default:
-                    throw new Exception($"Передан несуществующий метод '{notification.Method}'");
-            }
-            
-            client = new RestClient($"{_clinicUrl}/api/confirmOperation");
-            
-            request = new RestRequest(Method.POST);
-            request.DateFormat = "json";
-            request.AddHeader("cache-control", "no-cache");
-            request.AddHeader("Content-Type", "application/json");
-            request.AddParameter("OperationId", notification.OperationId.ToString());
-            response = client.Execute(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                var message = String.IsNullOrEmpty(response.Content) ? response.ErrorMessage : response.Content;
-                throw new InvalidOperationException($"Не удалось подтвердить операцию '{notification.OperationId}': {response.StatusCode} - {message}");
-            }
+                var request = new RestRequest(Method.GET);
+                request.AddHeader("cache-control", "no-cache");
+                request.AddQueryParameter("operationId", notification.OperationId.ToString());
 
+                IRestResponse response = client.Execute(request);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    var message = String.IsNullOrEmpty(response.Content) ? response.ErrorMessage : response.Content;
+                    throw new InvalidOperationException($"Не удалось получить данные операции '{notification.OperationId}': {response.StatusCode} - {message}");
+                }
+
+                var parameters = JToken.Parse(response.Content).ToString();
+                switch (notification.Method)
+                {
+                    case "opensession":
+                        var openSessionData = JsonConvert.DeserializeObject<OpenSessionData>(parameters);
+                        _fiscalPrinterService.OpenSession(openSessionData.CashierId, openSessionData.CashierName);
+                        break;
+                    case "receipt":
+                        var receipt = JsonConvert.DeserializeObject<Receipt>(parameters);
+                        _fiscalPrinterService.PrintReceipt(receipt);
+                        break;
+                    case "refund":
+                        var refund = JsonConvert.DeserializeObject<Receipt>(parameters);
+                        _fiscalPrinterService.PrintRefund(refund);
+                        break;
+                    case "xreport":
+                        _fiscalPrinterService.PrintXReport();
+                        break;
+                    case "zreport":
+                        _fiscalPrinterService.PrintZReport();
+                        break;
+                    default:
+                        throw new Exception($"Передан несуществующий метод '{notification.Method}'");
+                }
+
+                var operation = new Operation
+                {
+                    ClinicOperationId = notification.OperationId,
+                    Method = notification.Method,
+                    Received = DateTime.Now
+                };
+                _dataContext.Operations.Add(operation);
+                _dataContext.SaveChanges();
+
+                client = new RestClient($"{_clinicUrl}/api/confirmOperation");
+
+                request = new RestRequest(Method.POST);
+                request.DateFormat = "json";
+                request.AddHeader("cache-control", "no-cache");
+                request.AddHeader("Content-Type", "application/json");
+                request.AddParameter("OperationId", notification.OperationId.ToString());
+
+                response = client.Execute(request);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    var message = String.IsNullOrEmpty(response.Content) ? response.ErrorMessage : response.Content;
+                    throw new InvalidOperationException($"Не удалось подтвердить операцию '{notification.OperationId}': {response.StatusCode} - {message}");
+                }
+
+                operation.Confirmed = DateTime.Now;
+                _dataContext.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e);
+
+                var client = new RestClient($"{_clinicUrl}/api/reportError");
+
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("cache-control", "no-cache");
+                request.AddParameter("application/json", JsonConvert.SerializeObject(
+                    new
+                    {
+                        OperationId = notification.OperationId.ToString(),
+                        ErrorMessage = e.ToString()
+                    })
+                    , ParameterType.RequestBody);
+
+
+                IRestResponse response = client.Execute(request);
+            }
         }
     }
 

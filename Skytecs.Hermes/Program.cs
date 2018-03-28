@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Hosting.WindowsServices;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Skytecs.Hermes.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Skytecs.Hermes
 {
