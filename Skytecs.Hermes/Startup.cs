@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -56,11 +55,13 @@ namespace Skytecs.Hermes
             services.AddTransient<IFiscalPrinterService, AtolPrinterService>();
             services.AddTransient<ISessionStorage, TempStorage>();
             services.AddSingleton<CentrifugoClient>();
+            services.AddTransient<IBarcodePrinterService, ZebraPrinterService>();
             services.AddCors();
             services.AddMvc();
             services.Configure<FiscalPrinterSettings>(Configuration);
             services.Configure<CommonSettings>(Configuration);
             services.Configure<CentrifugoSettings>(Configuration);
+            services.Configure<BarcodePrinterSettings>(Configuration);
 
             services.AddEntityFrameworkSqlite();
             services.AddDbContext<DataContext>(options => options.UseSqlite(Configuration.GetConnectionString("CashboxDatabase")));
@@ -95,6 +96,7 @@ namespace Skytecs.Hermes
     {
         private static ILogger<CentrifugoClient> _logger;
         private static IFiscalPrinterService _fiscalPrinterService;
+        private static IBarcodePrinterService _barcodePrinterService;
         private static string _clinicUrl;
         private static DataContext _dataContext;
 
@@ -104,6 +106,7 @@ namespace Skytecs.Hermes
             {
                 _logger = app.ApplicationServices.GetService<ILogger<CentrifugoClient>>();
                 _fiscalPrinterService = app.ApplicationServices.GetService<IFiscalPrinterService>();
+                _barcodePrinterService = app.ApplicationServices.GetService<IBarcodePrinterService>();
                 var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
                 _clinicUrl = config.Value.ClinicUrl;
                 var client = app.ApplicationServices.GetService<CentrifugoClient>();
@@ -163,6 +166,11 @@ namespace Skytecs.Hermes
                         break;
                     case "zreport":
                         _fiscalPrinterService.PrintZReport();
+                        break;
+
+                    case "labels":
+                        var printerData = JsonConvert.DeserializeObject<BarcodePrinterData>(parameters);
+                        _barcodePrinterService.Send(printerData);
                         break;
                     default:
                         throw new Exception($"Передан несуществующий метод '{notification.Method}'");
