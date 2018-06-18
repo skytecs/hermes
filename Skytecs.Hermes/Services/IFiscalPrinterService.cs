@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Skytecs.Hermes.Services
 {
-    public interface IFiscalPrinterService : IDisposable
+    public interface IFiscalPrinterService
     {
         void OpenSession(int cashierId, string cashierName);
         void PrintReceipt(Receipt reciept);

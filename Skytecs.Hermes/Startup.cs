@@ -107,8 +107,15 @@ namespace Skytecs.Hermes
                 _logger = app.ApplicationServices.GetService<ILogger<CentrifugoClient>>();
                 _fiscalPrinterService = app.ApplicationServices.GetService<IFiscalPrinterService>();
                 _barcodePrinterService = app.ApplicationServices.GetService<IBarcodePrinterService>();
+
                 var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
+                if(!config.Value.EnableCentrifugoListener)
+                {
+                    return app;
+                }
+
                 _clinicUrl = config.Value.ClinicUrl;
+
                 var client = app.ApplicationServices.GetService<CentrifugoClient>();
                 client.Connect()
                     .ContinueWith(x => client.Subscribe())

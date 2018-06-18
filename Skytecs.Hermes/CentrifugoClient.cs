@@ -137,6 +137,7 @@ namespace Skytecs.Hermes
                 catch (Exception e)
                 {
                     _logger.Error(e);
+                    await Task.Delay(5 * 60 * 1000);
                 }
             }
         }
