@@ -131,8 +131,8 @@
               <File Id="Microsoft.Extensions.Primitives.dll" Source="$(var.SourcePath)\Microsoft.Extensions.Primitives.dll" DiskId="1" />
               <File Id="Microsoft.Extensions.WebEncoders.dll" Source="$(var.SourcePath)\Microsoft.Extensions.WebEncoders.dll" DiskId="1" />
               <File Id="Microsoft.Net.Http.Headers.dll" Source="$(var.SourcePath)\Microsoft.Net.Http.Headers.dll" DiskId="1" />
-              <File Id="Microsoft.PointOfService.ControlBase.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.ControlBase.dll" DiskId="1" />
-              <File Id="Microsoft.PointOfService.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.dll" DiskId="1" />
+              <!--<File Id="Microsoft.PointOfService.ControlBase.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.ControlBase.dll" DiskId="1" />
+              <File Id="Microsoft.PointOfService.dll" Source="$(var.SourcePath)\Microsoft.PointOfService.dll" DiskId="1" />-->
               <File Id="Microsoft.Win32.Primitives.dll" Source="$(var.SourcePath)\Microsoft.Win32.Primitives.dll" DiskId="1" />
               <File Id="Newtonsoft.Json.dll" Source="$(var.SourcePath)\Newtonsoft.Json.dll" DiskId="1" />
               <File Id="NLog.dll" Source="$(var.SourcePath)\NLog.dll" DiskId="1" />
