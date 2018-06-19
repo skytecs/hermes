@@ -39,7 +39,7 @@
               <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" DiskId="1" />
               <File Id="app.config" Source="$(var.SourcePath)\app.config" DiskId="1" />
               <File Id="nlog.config" Source="$(var.SourcePath)\nlog.config" DiskId="1" />
-              
+
               <!--
               <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
               <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
@@ -49,45 +49,45 @@
               <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
               <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
               -->
-              
-              <File Id="Interop.FprnM1C.dll" Source="$(var.SourcePath)\Interop.FprnM1C.dll" DiskId="1" />                                    
-              <File Id="libuv.dll" Source="$(var.SourcePath)\libuv.dll" DiskId="1" />                                              
-              <File Id="Microsoft.AI.Agent.Intercept.dll" Source="$(var.SourcePath)\Microsoft.AI.Agent.Intercept.dll" DiskId="1" />                       
-              <File Id="Microsoft.AI.DependencyCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.DependencyCollector.dll" DiskId="1" />                   
-              <File Id="Microsoft.AI.PerfCounterCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.PerfCounterCollector.dll" DiskId="1" />                  
-              <File Id="Microsoft.AI.ServerTelemetryChannel.dll" Source="$(var.SourcePath)\Microsoft.AI.ServerTelemetryChannel.dll" DiskId="1" />                
-              <File Id="Microsoft.ApplicationInsights.AspNetCore.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.AspNetCore.dll" DiskId="1" />            
-              <File Id="Microsoft.ApplicationInsights.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.dll" DiskId="1" />                       
-              <File Id="Microsoft.AspNetCore.Antiforgery.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Antiforgery.dll" DiskId="1" />                    
-              <File Id="Microsoft.AspNetCore.Authorization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Authorization.dll" DiskId="1" />                  
-              <File Id="Microsoft.AspNetCore.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cors.dll" DiskId="1" />                           
-              <File Id="Microsoft.AspNetCore.Cryptography.Internal.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cryptography.Internal.dll" DiskId="1" />          
-              <File Id="Microsoft.AspNetCore.DataProtection.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.Abstractions.dll" DiskId="1" />    
-              <File Id="Microsoft.AspNetCore.DataProtection.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.dll" DiskId="1" />                 
-              <File Id="Microsoft.AspNetCore.Diagnostics.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.Abstractions.dll" DiskId="1" />       
-              <File Id="Microsoft.AspNetCore.Diagnostics.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.dll" DiskId="1" />                    
-              <File Id="Microsoft.AspNetCore.Hosting.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Abstractions.dll" DiskId="1" />           
-              <File Id="Microsoft.AspNetCore.Hosting.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.dll" DiskId="1" />                       
-              <File Id="Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" DiskId="1" />   
-              <File Id="Microsoft.AspNetCore.Hosting.WindowsServices.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.WindowsServices.dll" DiskId="1" />       
-              <File Id="Microsoft.AspNetCore.Html.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Html.Abstractions.dll" DiskId="1" />             
-              <File Id="Microsoft.AspNetCore.Http.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Abstractions.dll" DiskId="1" />             
-              <File Id="Microsoft.AspNetCore.Http.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.dll" DiskId="1" />                          
-              <File Id="Microsoft.AspNetCore.Http.Extensions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Extensions.dll" DiskId="1" />               
-              <File Id="Microsoft.AspNetCore.Http.Features.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Features.dll" DiskId="1" />                 
-              <File Id="Microsoft.AspNetCore.HttpOverrides.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.HttpOverrides.dll" DiskId="1" />                 
-              <File Id="Microsoft.AspNetCore.JsonPatch.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.JsonPatch.dll" DiskId="1" />                     
-              <File Id="Microsoft.AspNetCore.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Localization.dll" DiskId="1" />                  
-              <File Id="Microsoft.AspNetCore.Mvc.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Abstractions.dll" DiskId="1" />              
-              <File Id="Microsoft.AspNetCore.Mvc.ApiExplorer.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.ApiExplorer.dll" DiskId="1" />               
-              <File Id="Microsoft.AspNetCore.Mvc.Core.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Core.dll" DiskId="1" />                      
-              <File Id="Microsoft.AspNetCore.Mvc.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Cors.dll" DiskId="1" />                      
-              <File Id="Microsoft.AspNetCore.Mvc.DataAnnotations.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.DataAnnotations.dll" DiskId="1" />           
-              <File Id="Microsoft.AspNetCore.Mvc.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.dll" DiskId="1" />                           
-              <File Id="Microsoft.AspNetCore.Mvc.Formatters.Json.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Formatters.Json.dll" DiskId="1" />           
-              <File Id="Microsoft.AspNetCore.Mvc.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Localization.dll" DiskId="1" />              
-              <File Id="Microsoft.AspNetCore.Mvc.Razor.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.dll" DiskId="1" />                     
-              <File Id="Microsoft.AspNetCore.Mvc.Razor.Host.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.Host.dll" DiskId="1" />                
+
+              <File Id="Interop.FprnM1C.dll" Source="$(var.SourcePath)\Interop.FprnM1C.dll" DiskId="1" />
+              <File Id="libuv.dll" Source="$(var.SourcePath)\libuv.dll" DiskId="1" />
+              <File Id="Microsoft.AI.Agent.Intercept.dll" Source="$(var.SourcePath)\Microsoft.AI.Agent.Intercept.dll" DiskId="1" />
+              <File Id="Microsoft.AI.DependencyCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.DependencyCollector.dll" DiskId="1" />
+              <File Id="Microsoft.AI.PerfCounterCollector.dll" Source="$(var.SourcePath)\Microsoft.AI.PerfCounterCollector.dll" DiskId="1" />
+              <File Id="Microsoft.AI.ServerTelemetryChannel.dll" Source="$(var.SourcePath)\Microsoft.AI.ServerTelemetryChannel.dll" DiskId="1" />
+              <File Id="Microsoft.ApplicationInsights.AspNetCore.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.AspNetCore.dll" DiskId="1" />
+              <File Id="Microsoft.ApplicationInsights.dll" Source="$(var.SourcePath)\Microsoft.ApplicationInsights.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Antiforgery.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Antiforgery.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Authorization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Authorization.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cors.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Cryptography.Internal.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Cryptography.Internal.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.DataProtection.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.DataProtection.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.DataProtection.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Diagnostics.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Diagnostics.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Diagnostics.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Hosting.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Hosting.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Hosting.WindowsServices.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Hosting.WindowsServices.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Html.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Html.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Http.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Http.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Http.Extensions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Extensions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Http.Features.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Http.Features.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.HttpOverrides.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.HttpOverrides.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.JsonPatch.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.JsonPatch.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Localization.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Abstractions.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Abstractions.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.ApiExplorer.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.ApiExplorer.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Core.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Core.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Cors.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Cors.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.DataAnnotations.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.DataAnnotations.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Formatters.Json.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Formatters.Json.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Localization.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Localization.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Razor.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.dll" DiskId="1" />
+              <File Id="Microsoft.AspNetCore.Mvc.Razor.Host.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.Razor.Host.dll" DiskId="1" />
               <File Id="Microsoft.AspNetCore.Mvc.TagHelpers.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.TagHelpers.dll" DiskId="1" />
               <File Id="Microsoft.AspNetCore.Mvc.ViewFeatures.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Mvc.ViewFeatures.dll" DiskId="1" />
               <File Id="Microsoft.AspNetCore.Razor.dll" Source="$(var.SourcePath)\Microsoft.AspNetCore.Razor.dll" DiskId="1" />
@@ -174,18 +174,28 @@
               <File Id="System.Xml.XPath.XDocument.dll" Source="$(var.SourcePath)\System.Xml.XPath.XDocument.dll" DiskId="1" />
               <File Id="WeblogTarget.dll" Source="$(var.SourcePath)\WeblogTarget.dll" DiskId="1" />
 
+              <File Id="Microsoft.EntityFrameworkCore.dll" Source="$(var.SourcePath)\Microsoft.EntityFrameworkCore.dll" DiskId="1" />
+              <File Id="Microsoft.EntityFrameworkCore.Relational.dll" Source="$(var.SourcePath)\Microsoft.EntityFrameworkCore.Relational.dll" DiskId="1" />
+              <File Id="Microsoft.EntityFrameworkCore.Sqlite.dll" Source="$(var.SourcePath)\Microsoft.EntityFrameworkCore.Sqlite.dll" DiskId="1" />
+              <File Id="Microsoft.Data.Sqlite.dll" Source="$(var.SourcePath)\Microsoft.Data.Sqlite.dll" DiskId="1" />
+              <File Id="System.Interactive.Async.dll" Source="$(var.SourcePath)\System.Interactive.Async.dll" DiskId="1" />
+              <File Id="Remotion.Linq.dll" Source="$(var.SourcePath)\Remotion.Linq.dll" DiskId="1" />
+              <File Id="sqlite3.dll" Source="$(var.SourcePath)\sqlite3.dll" DiskId="1" />
+
               <!-- Tell WiX to install the Service -->
               <ServiceInstall Id="ServiceInstaller"
                               Type="ownProcess"
                               Name="$(var.Name)"
                               DisplayName="$(var.Name)"
                               Description="Windows service which provides API for connected fiscal printers."
-                              Start="auto"                              
+                              Start="auto"
                               Interactive="yes"
                               Account="LocalSystem"
-                              ErrorControl="normal" />
+                              ErrorControl="normal">
+                <ServiceConfig DelayedAutoStart="yes" OnInstall="yes" OnReinstall="yes" />
+              </ServiceInstall>
               <!-- Tell WiX to start the Service -->
-              <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="$(var.Name)" Wait="yes" />
+              <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="$(var.Name)" Wait="no" />
 
             </Component>
           </Directory>
