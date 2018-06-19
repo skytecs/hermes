@@ -24,12 +24,14 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 
 namespace Skytecs.Hermes
 {
     public class Startup
     {
         private IOptions<CommonSettings> _config;
+        private readonly string _specialFolder;
 
         public Startup(IHostingEnvironment env)
         {
@@ -43,11 +45,16 @@ namespace Skytecs.Hermes
 
             Configuration = builder.Build();
 
-
+            _specialFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Skytecs", "Hermes");
+            if (!Directory.Exists(_specialFolder))
+            {
+                Directory.CreateDirectory(_specialFolder);
+            }
         }
 
 
         public IConfigurationRoot Configuration { get; }
+
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -63,8 +70,10 @@ namespace Skytecs.Hermes
             services.Configure<CentrifugoSettings>(Configuration);
             services.Configure<BarcodePrinterSettings>(Configuration);
 
+            var settings = Configuration.Get<CommonSettings>();
+
             services.AddEntityFrameworkSqlite();
-            services.AddDbContext<DataContext>(options => options.UseSqlite(Configuration.GetConnectionString("CashboxDatabase")));
+            services.AddDbContext<DataContext>(options => options.UseSqlite($"Filename={Path.Combine(_specialFolder, settings.CashboxDatabase)}"));
 
 
         }
@@ -109,7 +118,7 @@ namespace Skytecs.Hermes
                 _barcodePrinterService = app.ApplicationServices.GetService<IBarcodePrinterService>();
 
                 var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
-                if(!config.Value.EnableCentrifugoListener)
+                if (!config.Value.EnableCentrifugoListener)
                 {
                     return app;
                 }

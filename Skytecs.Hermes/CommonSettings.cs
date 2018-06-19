@@ -12,5 +12,8 @@ namespace Skytecs.Hermes
         public string ClinicUrl { get; set; }
 
         public bool EnableCentrifugoListener { get; set; }
+
+        public string CashboxDatabase { get; set; }
+        
     }
 }
