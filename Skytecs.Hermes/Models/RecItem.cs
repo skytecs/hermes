@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Skytecs.Hermes.Services;
 
 namespace Skytecs.Hermes.Models
 {
@@ -14,5 +15,6 @@ namespace Skytecs.Hermes.Models
         public int VatInfo { get; set; }
         public decimal UnitPrice { get; set; }
         public string UnitName { get; set; }
+        public VatType TaxType { get; internal set; }
     }
 }

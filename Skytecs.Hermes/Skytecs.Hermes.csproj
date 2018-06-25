@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="fptr10.dll" />
     <None Remove="Session.xml" />
   </ItemGroup>
 
@@ -19,6 +20,12 @@
       <Isolated>false</Isolated>
       <Private>true</Private>
     </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="fptr10.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

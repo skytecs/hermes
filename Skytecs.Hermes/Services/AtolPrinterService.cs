@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using System.Runtime.Serialization;
 
 namespace Skytecs.Hermes.Services
 {
@@ -27,9 +28,19 @@ namespace Skytecs.Hermes.Services
             _sessionStorage = sessionStorage;
             _config = config;
 
-            _logger.Info("Инициализация сервиса печати чеков Атол.");
+            //_logger.Info("Инициализация сервиса печати чеков Атол.");
 
-            using (var factory = new FiscalPrinterFactory(_config))
+            //using (var atolPrinter = new AtolWrapper(_config))
+            //{
+            //    Console.WriteLine(atolPrinter.GetSettings());
+
+            //    atolPrinter.Open();
+
+            //    atolPrinter.IsOpened();
+
+            //}
+
+            /*using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
 
@@ -55,7 +66,7 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
                 _logger.Info("Инициализация сервиса печати чеков Атол завершена.");
-            }
+            }*/
         }
 
         public void CheckConnection()
@@ -72,7 +83,27 @@ namespace Skytecs.Hermes.Services
 
         public void OpenSession(int cashierId, string cashierName)
         {
-            using (var factory = new FiscalPrinterFactory(_config))
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                _logger.Info($"Попытка открытия смены для кассира {cashierId} ({cashierName}).\nПроверка статуса текущей смены.");
+                //if (atolPrinter.SessionOpened)
+                //{
+                //}
+
+                var session = new CashierSession(cashierId, cashierName);
+                //atolPrinter.SetParam(1021, cashierName);
+                session.SessionStart = DateTime.Now;
+
+                _sessionStorage.Set(session);
+
+                _logger.Info("Открытие смены.");
+
+                atolPrinter.ExecuteCommand<OpenShift>(new OpenShift());
+            }
+
+            /*using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
 
@@ -136,7 +167,7 @@ namespace Skytecs.Hermes.Services
                 {
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
-            }
+            }*/
         }
 
         public void PrintReceipt(Receipt receipt)
@@ -144,7 +175,44 @@ namespace Skytecs.Hermes.Services
             Check.NotNull(receipt, nameof(receipt));
             Check.NotNull(receipt.Sum, nameof(receipt.Sum));
 
-            _logger.Info("Печать чека начата.\nПроверка статуса смены.");
+            _logger.Info("Печать чека");
+
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                var items = new List<object>();
+                foreach (var item in receipt.Items)
+                {
+                    items.Add(new PositionItem
+                    {
+                        Name = item.Description,
+                        Quantity = item.Quantity,
+                        Price = (double)item.Price,
+                        Amount = (double)item.Price * item.Quantity,
+                        //TODO: Tax = new Tax { Type = item.TaxType } 
+                        Tax = new Tax { Type = VatType.None }
+                    });
+                }
+
+                var payments = new List<Payment>();
+                payments.Add(new Payment
+                {
+                    Sum = (double)receipt.Sum,
+                    Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                });
+
+                atolPrinter.ExecuteCommand(new PrintReceipt
+                {
+                    Type = PrintReceiptCommand.Sell,
+                    //TaxationType = TaxationType.UsnIncomeOutcome,
+                    Items = items,
+                    Payments = payments,
+                    Operator = GetOperator()
+                });
+            }
+
+            /*
             using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
@@ -229,6 +297,7 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
             }
+            */
         }
 
         public void PrintRefund(Receipt receipt)
@@ -324,8 +393,18 @@ namespace Skytecs.Hermes.Services
 
         public void PrintZReport()
         {
-            _logger.Info("Снятие Z-отчета с закрытием смены.\nПроверка статуса текущей смены.");
+            _logger.Info("Снятие Z-отчета.");
 
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                atolPrinter.ExecuteCommand(new CloseShift());
+
+                _sessionStorage.Remove();
+            }
+
+            /*
             using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
@@ -372,6 +451,7 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
             }
+            */
         }
 
         public void PrintXReport()
@@ -422,6 +502,22 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
             }
+        }
+
+        private Operator GetOperator()
+        {
+            var session = _sessionStorage.Get();
+            if (session == null)
+            {
+                throw new Exception("Информация о смене не найдена.");
+            }
+
+            var casboxOperator = new Operator
+            {
+                Name = session.CashierName
+            };
+
+            return casboxOperator;
         }
 
         private int PrintItem(FprnM45 printer, RecItem item)
@@ -552,4 +648,440 @@ namespace Skytecs.Hermes.Services
             _printer.DeviceEnabled = false;
         }
     }
+
+
+
+    #region Atol Data Contracts
+    [DataContract]
+    public abstract class FiscalPrinterCommand<TCommandType>
+    {
+        [DataMember(Name = "type")]
+        public TCommandType Type { get; set; }
+
+        [DataMember(Name = "operator")]
+        public Operator Operator { get; set; }
+    }
+
+    [DataContract]
+    public class Operator
+    {
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "vatin")]
+        public string Vatin { get; set; }
+    }
+
+    [DataContract]
+    public class OpenShift : FiscalPrinterCommand<OpenShiftCommandType>
+    {
+    }
+
+    [DataContract]
+    public enum OpenShiftCommandType
+    {
+        [EnumMember(Value = "openShift")] OpenShift
+    }
+
+    [DataContract]
+    public class FiscalParams
+    {
+
+        [DataMember(Name = "fiscalDocumentDateTime")]
+        public DateTime FiscalDocumentDateTime { get; set; }
+
+        [DataMember(Name = "fiscalDocumentNumber")]
+        public int FiscalDocumentNumber { get; set; }
+
+        [DataMember(Name = "fiscalDocumentSign")]
+        public string FiscalDocumentSign { get; set; }
+
+        [DataMember(Name = "fnNumber")]
+        public string FnNumber { get; set; }
+
+        [DataMember(Name = "registrationNumber")]
+        public string RegistrationNumber { get; set; }
+
+        [DataMember(Name = "shiftNumber")]
+        public int ShiftNumber { get; set; }
+
+        [DataMember(Name = "fnsUrl")]
+        public string FnsUrl { get; set; }
+    }
+
+    [DataContract]
+    public class Warnings
+    {
+
+        [DataMember(Name = "notPrinted")]
+        public bool NotPrinted { get; set; }
+    }
+
+    [DataContract]
+    public class CommandResponse
+    {
+
+        [DataMember(Name = "fiscalParams")]
+        public FiscalParams FiscalParams { get; set; }
+
+        [DataMember(Name = "warnings")]
+        public Warnings Warnings { get; set; }
+    }
+
+    [DataContract]
+    public class CloseShift : FiscalPrinterCommand<CloseShiftCommandType>
+    {
+    }
+
+    [DataContract]
+    public enum CloseShiftCommandType
+    {
+        [EnumMember(Value = "closeShift")] CloseShift
+    }
+
+    [DataContract]
+    public class Tax
+    {
+        [DataMember(Name = "type")]
+        public VatType Type { get; set; }
+    }
+
+    [DataContract]
+    public enum VatType
+    {
+        [EnumMember(Value = "none")] None,
+        [EnumMember(Value = "vat0")] Vat0,
+        [EnumMember(Value = "vat10")] Vat10,
+        [EnumMember(Value = "vat18")] Vat18,
+        [EnumMember(Value = "vat110")] Vat110,
+        [EnumMember(Value = "vat118")] Vat118
+    }
+
+    [DataContract]
+    public class PayingAgent
+    {
+        [DataMember(Name = "operation")]
+        public string Operation { get; set; }
+
+        [DataMember(Name = "phones")]
+        public IList<string> Phones { get; set; }
+    }
+
+    [DataContract]
+    public class ReceivePaymentsOperator
+    {
+
+        [DataMember(Name = "phones")]
+        public IList<string> Phones { get; set; }
+    }
+
+    [DataContract]
+    public class MoneyTransferOperator
+    {
+
+        [DataMember(Name = "phones")]
+        public IList<string> Phones { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "address")]
+        public string Address { get; set; }
+
+        [DataMember(Name = "vatin")]
+        public string Vatin { get; set; }
+    }
+
+    [DataContract]
+    public class AgentInfo
+    {
+
+        [DataMember(Name = "agents")]
+        public IList<string> Agents { get; set; }
+
+        [DataMember(Name = "payingAgent")]
+        public PayingAgent PayingAgent { get; set; }
+
+        [DataMember(Name = "receivePaymentsOperator")]
+        public ReceivePaymentsOperator ReceivePaymentsOperator { get; set; }
+
+        [DataMember(Name = "moneyTransferOperator")]
+        public MoneyTransferOperator MoneyTransferOperator { get; set; }
+    }
+
+    [DataContract]
+    public class SupplierInfo
+    {
+
+        [DataMember(Name = "phones")]
+        public IList<string> Phones { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "vatin")]
+        public string Vatin { get; set; }
+    }
+
+    [DataContract]
+    public abstract class Item<TItemType>
+    {
+
+        [DataMember(Name = "type")]
+        public TItemType Type { get; set; }
+    }
+
+    [DataContract]
+    public class PositionItem : Item<PositionItemType>
+    {
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "price")]
+        public double Price { get; set; }
+
+        [DataMember(Name = "quantity")]
+        public double Quantity { get; set; }
+
+        [DataMember(Name = "amount")]
+        public double Amount { get; set; }
+
+        [DataMember(Name = "infoDiscountAmount")]
+        public double? InfoDiscountAmount { get; set; }
+
+        [DataMember(Name = "department")]
+        public int? Department { get; set; }
+
+        [DataMember(Name = "measurementUnit")]
+        public string MeasurementUnit { get; set; }
+
+        [DataMember(Name = "paymentMethod")]
+        public PaymentMethod? PaymentMethod { get; set; }
+
+        [DataMember(Name = "paymentObject")]
+        public PaymentObject? PaymentObject { get; set; }
+
+        [DataMember(Name = "nomenclatureCode")]
+        public object NomenclatureCode { get; set; }
+
+        [DataMember(Name = "tax")]
+        public Tax Tax { get; set; }
+
+        [DataMember(Name = "agentInfo")]
+        public AgentInfo AgentInfo { get; set; }
+
+        [DataMember(Name = "supplierInfo")]
+        public SupplierInfo SupplierInfo { get; set; }
+    }
+
+    [DataContract]
+    public class TextItem : Item<TextItemType>
+    {
+        [DataMember(Name = "text")]
+        public string Text { get; set; }
+
+        [DataMember(Name = "alignment")]
+        public Alignment? Alignment { get; set; }
+
+        [DataMember(Name = "font")]
+        public int? Font { get; set; }
+
+        [DataMember(Name = "doubleWidth")]
+        public bool? DoubleWidth { get; set; }
+
+        [DataMember(Name = "doubleHeight")]
+        public bool? DoubleHeight { get; set; }
+    }
+
+    [DataContract]
+    public class BarcodeItem : Item<BarcodeItemType>
+    {
+        [DataMember(Name = "barcode")]
+        public string Barcode { get; set; }
+
+        [DataMember(Name = "barcodeType")]
+        public BarcodeType BarcodeType { get; set; }
+
+        [DataMember(Name = "alignment")]
+        public Alignment? Alignment { get; set; }
+
+        [DataMember(Name = "scale")]
+        public int? Scale { get; set; }
+
+        [DataMember(Name = "printText")]
+        public bool? PrintText { get; set; }
+    }
+
+    [DataContract]
+    public enum BarcodeType
+    {
+        EAN8,
+        EAN13,
+        CODE39,
+        QR,
+        AZTEC
+    }
+
+    public enum PositionItemType
+    {
+        Position
+    }
+
+    public enum TextItemType
+    {
+        Text
+    }
+
+    public enum BarcodeItemType
+    {
+        Barcode
+    }
+
+    [DataContract]
+    public enum Alignment
+    {
+        Left,
+        Right,
+        Center
+    }
+
+    [DataContract]
+    public enum PaymentObject
+    {
+        FullPrepayment,
+        Prepayment,
+        Advance,
+        FullPayment,
+        PartialPayment,
+        Credit,
+        CreditPayment
+    }
+
+    [DataContract]
+    public enum PaymentMethod
+    {
+        Commodity,
+        Excise,
+        Job,
+        Service,
+        GamblingBet,
+        GamblingPrize,
+        Lottery,
+        LotteryPrize,
+        IntellectualActivity,
+        Payment,
+        AgentCommission,
+        Composite,
+        Another
+    }
+
+    [DataContract]
+    public class Payment
+    {
+
+        [DataMember(Name = "type")]
+        public PaymentType Type { get; set; }
+
+        [DataMember(Name = "sum")]
+        public double Sum { get; set; }
+    }
+
+    [DataContract]
+    public enum PaymentType
+    {
+        [EnumMember(Value = "cash")] Cash = 0,
+        [EnumMember(Value = "electronically")] Electronically = 1,
+        [EnumMember(Value = "prepaid")] Prepaid = 2,
+        [EnumMember(Value = "credit")] Credit = 3,
+        [EnumMember(Value = "other")] Other = 4,
+    }
+
+    [DataContract]
+    public class PrintReceipt : FiscalPrinterCommand<PrintReceiptCommand>
+    {
+        [DataMember(Name = "taxationType")]
+        public TaxationType TaxationType { get; set; }
+
+        [DataMember(Name = "items")]
+        public ICollection<object> Items { get; set; }
+
+        [DataMember(Name = "payments")]
+        public ICollection<Payment> Payments { get; set; }
+
+        [DataMember(Name = "total")]
+        public double? Total { get; set; }
+    }
+
+    [DataContract]
+    public enum PrintReceiptCommand
+    {
+        [EnumMember(Value = "sell")] Sell,
+        [EnumMember(Value = "sellReturn")] SellReturn,
+        [EnumMember(Value = "buy")] Buy,
+        [EnumMember(Value = "buyReturn")] BuyReturn
+    }
+
+    [DataContract]
+    public enum TaxationType
+    {
+        [EnumMember(Value = "osn")] Osn,
+        [EnumMember(Value = "usnIncome")] UsnIncome,
+        [EnumMember(Value = "usnIncomeOutcome")] UsnIncomeOutcome,
+        [EnumMember(Value = "envd")] Envd,
+        [EnumMember(Value = "esn")] Esn,
+        [EnumMember(Value = "patent")] Patent
+    }
+
+    [DataContract]
+    public class PrintXReport : FiscalPrinterCommand<PrintXReportCommandType>
+    {
+    }
+
+    public enum PrintXReportCommandType
+    {
+        [EnumMember(Value = "reportX")] ReportX
+    }
+
+
+    [DataContract]
+    public class PrintCorrectionReceipt : FiscalPrinterCommand<PrintCorrectionReceiptCommandType>
+    {
+        [DataMember(Name = "taxationType")]
+        public TaxationType TaxationType { get; set; }
+
+        [DataMember(Name = "correctionType")]
+        public CorrectionType CorrectionType { get; set; }
+
+        [DataMember(Name = "correctionBaseDate")]
+        public string CorrectionBaseDate { get; set; }
+
+        [DataMember(Name = "correctionBaseNumber")]
+        public string CorrectionBaseNumber { get; set; }
+
+        [DataMember(Name = "correctionBaseName")]
+        public string CorrectionBaseName { get; set; }
+
+        [DataMember(Name = "payments")]
+        public IList<Payment> Payments { get; set; }
+
+        [DataMember(Name = "taxes")]
+        public IList<Tax> Taxes { get; set; }
+    }
+
+    public enum PrintCorrectionReceiptCommandType
+    {
+        [EnumMember(Value = "sellCorrection")] SellCorrection,
+        [EnumMember(Value = "buyCorrection")] BuyCorrection,
+    }
+
+    public enum CorrectionType
+    {
+        [EnumMember(Value = "self")]
+        Self,
+        [EnumMember(Value = "instruction")]
+        Instruction
+    }
+
+    #endregion
 }
