@@ -81,6 +81,29 @@ namespace Skytecs.Hermes.Services
             }
         }
 
+        public string GetFFDVersion()
+        {
+            var response = libfptr_get_param_int(_fptr, (int)param.LIBFPTR_PARAM_DEVICE_FFD_VERSION);
+            if (response < 0)
+            {
+                (var code, var message) = GetLastError();
+                throw new InvalidOperationException($"{code} - {message}");
+            }
+
+            switch ((ffd_version)response)
+            {
+                case ffd_version.LIBFPTR_FFD_1_0:
+                case ffd_version.LIBFPTR_FFD_UNKNOWN:
+                    return "1.0";
+                case ffd_version.LIBFPTR_FFD_1_0_5:
+                    return "1.0.5";
+                case ffd_version.LIBFPTR_FFD_1_1:
+                    return "1.1";
+                default:
+                    return null;
+            }
+        }
+
         public void ExecuteCommand<TCommand>(TCommand command)
         {
             if (command == null)
@@ -98,7 +121,7 @@ namespace Skytecs.Hermes.Services
             string json;
             using (var writer = new StringWriter())
             {
-                
+
                 ser.Serialize(writer, command);
 
                 json = writer.ToString();
@@ -108,13 +131,47 @@ namespace Skytecs.Hermes.Services
 
             libfptr_set_param_str(_fptr, (int)param.LIBFPTR_PARAM_JSON_DATA, json);
             var status = libfptr_process_json(_fptr);
-            if(status < 0)
+            if (status < 0)
+            {
+                (var code, var message) = GetLastError();
+                throw new InvalidOperationException($"{code} - {message}");
+            }
+        }
+
+        public TCommandResponse ExecuteCommand<TCommand, TCommandResponse>(TCommand command)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+
+            var ser = new JsonSerializer
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            ser.Converters.Add(new StringEnumConverter { CamelCaseText = true });
+
+            string json;
+            using (var writer = new StringWriter())
+            {
+
+                ser.Serialize(writer, command);
+
+                json = writer.ToString();
+            }
+
+            //log json
+
+            libfptr_set_param_str(_fptr, (int)param.LIBFPTR_PARAM_JSON_DATA, json);
+            var status = libfptr_process_json(_fptr);
+            if (status < 0)
             {
                 (var code, var message) = GetLastError();
                 throw new InvalidOperationException($"{code} - {message}");
             }
 
-            /*
+
             var result = new StringBuilder(1024);
 
 
@@ -125,14 +182,16 @@ namespace Skytecs.Hermes.Services
                 result.Capacity = size;
                 libfptr_get_param_str(_fptr, (int)param.LIBFPTR_PARAM_JSON_DATA, result, result.Capacity);
             }
+
             //log result
 
             using (var stringReader = new StringReader(result.ToString()))
             using (var jsonReader = new JsonTextReader(stringReader))
             {
                 return ser.Deserialize<TCommandResponse>(jsonReader);
-            }*/
+            }
         }
+
 
         public void CheckDocumentClosed()
         {

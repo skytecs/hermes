@@ -87,20 +87,21 @@ namespace Skytecs.Hermes.Services
             {
                 atolPrinter.Open();
 
-                _logger.Info($"Попытка открытия смены для кассира {cashierId} ({cashierName}).\nПроверка статуса текущей смены.");
-                //if (atolPrinter.SessionOpened)
-                //{
-                //}
+                CheckShiftIsClosed(atolPrinter);
+
+                _logger.Info($"Открытие смены для кассира {cashierId} ({cashierName}).");
 
                 var session = new CashierSession(cashierId, cashierName);
-                //atolPrinter.SetParam(1021, cashierName);
                 session.SessionStart = DateTime.Now;
 
                 _sessionStorage.Set(session);
 
                 _logger.Info("Открытие смены.");
 
-                atolPrinter.ExecuteCommand<OpenShift>(new OpenShift());
+                atolPrinter.ExecuteCommand(new OpenShift
+                {
+                    Operator = GetOperator()
+                });
             }
 
             /*using (var factory = new FiscalPrinterFactory(_config))
@@ -180,6 +181,8 @@ namespace Skytecs.Hermes.Services
             using (var atolPrinter = new AtolWrapper(_config))
             {
                 atolPrinter.Open();
+
+                CheckShiftIsOpend(atolPrinter);
 
                 var items = new List<object>();
                 foreach (var item in receipt.Items)
@@ -305,8 +308,46 @@ namespace Skytecs.Hermes.Services
             Check.NotNull(receipt, nameof(receipt));
             Check.NotNull(receipt.Sum, nameof(receipt.Sum));
 
-            _logger.Info("Печать чека начата.\nПроверка статуса смены.");
+            _logger.Info("Печать чека возврата.");
 
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                CheckShiftIsOpend(atolPrinter);
+
+                var items = new List<object>();
+                foreach (var item in receipt.Items)
+                {
+                    items.Add(new PositionItem
+                    {
+                        Name = item.Description,
+                        Quantity = item.Quantity,
+                        Price = (double)item.Price,
+                        Amount = (double)item.Price * item.Quantity,
+                        //TODO: Tax = new Tax { Type = item.TaxType } 
+                        Tax = new Tax { Type = VatType.None }
+                    });
+                }
+
+                var payments = new List<Payment>();
+                payments.Add(new Payment
+                {
+                    Sum = (double)receipt.Sum,
+                    Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                });
+
+                atolPrinter.ExecuteCommand(new PrintReceipt
+                {
+                    Type = PrintReceiptCommand.SellReturn,
+                    //TaxationType = TaxationType.UsnIncomeOutcome,
+                    Items = items,
+                    Payments = payments,
+                    Operator = GetOperator()
+                });
+            }
+
+            /*
             using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
@@ -389,7 +430,79 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
             }
+            */
         }
+
+        public void PrintCorrection(CorrectionReceipt receipt)
+        {
+            Check.NotNull(receipt, nameof(receipt));
+
+            _logger.Info("Печать чека коррекции.");
+
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                CheckShiftIsOpend(atolPrinter);
+
+                var payments = new List<Payment>
+                {
+                    new Payment
+                    {
+                        Sum = (double)receipt.Sum,
+                        Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                    }
+                };
+
+                var taxes = new List<Tax>
+                {
+                    new Tax
+                    {
+                        Type = receipt.TaxType
+                    }
+                };
+
+                var command = new PrintCorrectionReceipt
+                {
+                    Type = PrintCorrectionReceiptCommandType.SellCorrection,
+                    Operator = GetOperator(),
+                    Payments = payments,
+                    Taxes = taxes
+                };
+
+                var version = atolPrinter.GetFFDVersion();
+                if (version == "1.0.5" || version == "1.1")
+                {
+                    if (version == "1.1")
+                    {
+                        if (!receipt.CorrectionType.HasValue)
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Тип коррекции'.");
+                        }
+                        if (String.IsNullOrEmpty(receipt.CorrectionBaseName))
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Описание коррекции'.");
+                        }
+                        if (!receipt.CorrectionBaseDate.HasValue)
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Дату документа'.");
+                        }
+                        if (String.IsNullOrEmpty(receipt.CorrectionBaseNumber))
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Номер документа'.");
+                        }
+                    }
+
+                    command.CorrectionType = receipt.CorrectionType.Value;
+                    command.CorrectionBaseName = receipt.CorrectionBaseName;
+                    command.CorrectionBaseDate = receipt.CorrectionBaseDate?.ToString("yyyy.MM.dd");
+                    command.CorrectionBaseNumber = receipt.CorrectionBaseNumber;
+                }
+
+                atolPrinter.ExecuteCommand(command);
+            }
+        }
+
 
         public void PrintZReport()
         {
@@ -398,11 +511,16 @@ namespace Skytecs.Hermes.Services
             using (var atolPrinter = new AtolWrapper(_config))
             {
                 atolPrinter.Open();
-
-                atolPrinter.ExecuteCommand(new CloseShift());
-
-                _sessionStorage.Remove();
+                atolPrinter.ExecuteCommand(new CloseShift
+                {
+                    Operator = GetOperator()
+                });
             }
+
+            _logger.Info("Печать Z-отчета завершена успешно.\nУдаление данных о текущей смене.");
+            _sessionStorage.Remove();
+            _logger.Info("Удаление данных о текущей смене завершено.");
+
 
             /*
             using (var factory = new FiscalPrinterFactory(_config))
@@ -456,7 +574,23 @@ namespace Skytecs.Hermes.Services
 
         public void PrintXReport()
         {
-            _logger.Info("Снятие X-отчета с закрытием смены.\nПроверка статуса текущей смены.");
+            _logger.Info("Снятие X-отчета.");
+
+            using (var atolPrinter = new AtolWrapper(_config))
+            {
+                atolPrinter.Open();
+
+                CheckShiftIsOpend(atolPrinter);
+
+                atolPrinter.ExecuteCommand(new PrintXReport
+                {
+                    Operator = GetOperator()
+                });
+            }
+
+            _logger.Info("Печать X-отчета завершена успешно.");
+
+            /*
             using (var factory = new FiscalPrinterFactory(_config))
             {
                 var printer = factory.GetPrinter();
@@ -502,6 +636,54 @@ namespace Skytecs.Hermes.Services
                     throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
                 }
             }
+            */
+        }
+
+        private void CheckShiftIsOpend(AtolWrapper printer)
+        {
+            _logger.Info("Проверка состояния смены.");
+            var response = printer.ExecuteCommand<GetShiftStatus, GetShiftStatusResponse>(new GetShiftStatus());
+            var status = response.ShiftStatus.State;
+
+            switch (status)
+            {
+                case ShiftState.Closed:
+                    throw new InvalidOperationException("Смена закрыта.");
+                case ShiftState.Expired:
+                    throw new InvalidOperationException("Текущая смена привысила 24 часа.");
+                case ShiftState.Opened:
+                default:
+                    _logger.Info("Смена открыта.");
+                    return; //???
+            }
+        }
+
+        private void CheckShiftIsClosed(AtolWrapper printer)
+        {
+            _logger.Info("Проверка состояния смены.");
+            var response = printer.ExecuteCommand<GetShiftStatus, GetShiftStatusResponse>(new GetShiftStatus());
+            var status = response.ShiftStatus.State;
+
+            switch (status)
+            {
+                case ShiftState.Opened:
+                    throw new InvalidOperationException("Смена открыта.");
+                case ShiftState.Expired:
+                    throw new InvalidOperationException("Текущая смена привысила 24 часа.");
+                case ShiftState.Closed:
+                default:
+                    _logger.Info("Смена закрыта.");
+                    return; //???
+            }
+        }
+
+
+        private DeviceInfo GetDeviceInfo(AtolWrapper printer)
+        {
+            _logger.Info("Получение информаци об устройстве.");
+            var response = printer.ExecuteCommand<GetDeviceInfo, GetDeviceInfoResponse>(new GetDeviceInfo());
+
+            return response.DeviceInfo;
         }
 
         private Operator GetOperator()
@@ -611,6 +793,18 @@ namespace Skytecs.Hermes.Services
         //    CheckStatus();
         //}
 
+    }
+
+
+    public class CorrectionReceipt
+    {
+        public decimal Sum { get; set; }
+        public bool IsPaydByCard { get; set; }
+        public VatType TaxType { get; set; }
+        public CorrectionType? CorrectionType { get; set; }
+        public string CorrectionBaseName { get; set; }
+        public DateTime? CorrectionBaseDate { get; set; }
+        public string CorrectionBaseNumber { get; set; }
     }
 
     public class FiscalPrinterFactory : IDisposable
@@ -1047,11 +1241,8 @@ namespace Skytecs.Hermes.Services
     [DataContract]
     public class PrintCorrectionReceipt : FiscalPrinterCommand<PrintCorrectionReceiptCommandType>
     {
-        [DataMember(Name = "taxationType")]
-        public TaxationType TaxationType { get; set; }
-
         [DataMember(Name = "correctionType")]
-        public CorrectionType CorrectionType { get; set; }
+        public CorrectionType? CorrectionType { get; set; }
 
         [DataMember(Name = "correctionBaseDate")]
         public string CorrectionBaseDate { get; set; }
@@ -1069,6 +1260,7 @@ namespace Skytecs.Hermes.Services
         public IList<Tax> Taxes { get; set; }
     }
 
+
     public enum PrintCorrectionReceiptCommandType
     {
         [EnumMember(Value = "sellCorrection")] SellCorrection,
@@ -1083,5 +1275,77 @@ namespace Skytecs.Hermes.Services
         Instruction
     }
 
+
+    public class GetShiftStatus : FiscalPrinterCommand<GetShiftStatusCommandType>
+    {
+    }
+    public enum GetShiftStatusCommandType
+    {
+        [EnumMember(Value = "getShiftStatus")] GetShiftStatus,
+    }
+    public class GetShiftStatusResponse
+    {
+        [DataMember(Name = "shiftStatus")]
+        public ShiftStatus ShiftStatus { get; set; }
+
+    }
+    [DataContract]
+    public class ShiftStatus
+    {
+        [DataMember(Name = "expiredTime")]
+        public DateTime ExpiredTime { get; set; }
+
+        [DataMember(Name = "number")]
+        public string Number { get; set; }
+
+        [DataMember(Name = "state")]
+        public ShiftState State { get; set; }
+    }
+    public enum ShiftState
+    {
+        [EnumMember(Value = "closed")] Closed,
+        [EnumMember(Value = "opened")] Opened,
+        [EnumMember(Value = "expired")] Expired,
+    }
+
+
+    [DataContract]
+    public class GetDeviceInfo : FiscalPrinterCommand<GetDeviceInfoCommandType>
+    {
+    }
+    public enum GetDeviceInfoCommandType
+    {
+        [EnumMember(Value = "getDeviceInfo")] GetDeviceInfo,
+    }
+    [DataContract]
+    public class GetDeviceInfoResponse
+    {
+        [DataMember(Name = "deviceInfo")]
+        public DeviceInfo DeviceInfo { get; set; }
+    }
+    [DataContract]
+    public class DeviceInfo
+    {
+        [DataMember(Name = "firmwareVersion")]
+        public string FirmwareVersion { get; set; }
+
+        [DataMember(Name = "model")]
+        public string Model { get; set; }
+
+        [DataMember(Name = "modelName")]
+        public string ModelName { get; set; }
+
+        [DataMember(Name = "receiptLineLength")]
+        public string ReceiptLineLength { get; set; }
+
+        [DataMember(Name = "receiptLineLengthPix")]
+        public string ReceiptLineLengthPix { get; set; }
+
+        [DataMember(Name = "serial")]
+        public string Serial { get; set; }
+    }
+
+
     #endregion
 }
+

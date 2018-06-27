@@ -11,6 +11,7 @@ namespace Skytecs.Hermes.Services
         void OpenSession(int cashierId, string cashierName);
         void PrintReceipt(Receipt reciept);
         void PrintRefund(Receipt receipt);
+        void PrintCorrection(CorrectionReceipt receipt);
         void PrintZReport();
         void PrintXReport();
         void CheckConnection();

@@ -56,6 +56,22 @@ namespace Skytecs.Hermes.Controllers
             }
         }
 
+        [Route("api/correction")]
+        public IActionResult PrintCorrection([FromBody]CorrectionReceipt receipt)
+        {
+            try
+            {
+                _fiscalPrinterService.PrintCorrection(receipt);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e);
+                return StatusCode((int)HttpStatusCode.InternalServerError, e.Message);
+            }
+        }
+
+
         [Route("api/opensession/{cashies}")]
         public IActionResult OpenSession(int cashies, string name)
         {
