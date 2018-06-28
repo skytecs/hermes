@@ -22,9 +22,14 @@ namespace Skytecs.Hermes
             var pathToExe = Process.GetCurrentProcess().MainModule.FileName;
             var pathToContentRoot = Path.GetDirectoryName(pathToExe);
 
+            var appSettingsConfiguration = new ConfigurationBuilder()
+                .SetBasePath(pathToContentRoot)
+                .AddJsonFile("appsettings.json")
+                .Build();
+
             var host = new WebHostBuilder()
                 .UseStartup<Startup>()
-                .UseUrls("http://0.0.0.0:44444")
+                .UseUrls(appSettingsConfiguration["urls"])
                 .UseKestrel()
                 .UseContentRoot(pathToContentRoot)
                 //.UseApplicationInsights()

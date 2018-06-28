@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?define Name="Hermes" ?>
-<?define UpgradeCode="{1240E0CD-B3D2-44A7-B064-11B3C0709D69}" ?>
+<?define Name="Hermes 10" ?>
+<!--<?define UpgradeCode="{1240E0CD-B3D2-44A7-B064-11B3C0709D69}" ?>-->
+<?define UpgradeCode="{5CD24149-2A9E-4C29-8BAE-D5A625424E57}" ?>
 <?define SourcePath="$(var.Skytecs.Hermes.TargetDir)"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <?include ..\.build\Version.wxi ?>
@@ -33,7 +34,8 @@
         <Directory Id="MyPatients" Name="MyPatients">
           <Directory Id="INSTALLLOCATION" Name="$(var.Name)">
 
-            <Component Id="MainProduct" Guid="416A22A9-33F6-4FB3-91E6-DA2F63CC4CE3">
+            <!--<Component Id="MainProduct" Guid="416A22A9-33F6-4FB3-91E6-DA2F63CC4CE3">-->
+            <Component Id="MainProduct" Guid="A4BE6E50-A9E5-4000-8E32-DF8BF057A374">
               <File Id="Skytecs.Hermes.exe" Source="$(var.SourcePath)\Skytecs.Hermes.exe" DiskId="1" KeyPath="yes"/>
               <File Id="Skytecs.Hermes.exe.config" Source="$(var.SourcePath)\Skytecs.Hermes.exe.config" DiskId="1"/>
               <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" DiskId="1" />
@@ -173,6 +175,8 @@
               <File Id="System.Xml.XPath.dll" Source="$(var.SourcePath)\System.Xml.XPath.dll" DiskId="1" />
               <File Id="System.Xml.XPath.XDocument.dll" Source="$(var.SourcePath)\System.Xml.XPath.XDocument.dll" DiskId="1" />
               <File Id="WeblogTarget.dll" Source="$(var.SourcePath)\WeblogTarget.dll" DiskId="1" />
+
+              <File Id="fptr10.dll" Source="$(var.SourcePath)\fptr10.dll" DiskId="1" />
 
               <File Id="Microsoft.EntityFrameworkCore.dll" Source="$(var.SourcePath)\Microsoft.EntityFrameworkCore.dll" DiskId="1" />
               <File Id="Microsoft.EntityFrameworkCore.Relational.dll" Source="$(var.SourcePath)\Microsoft.EntityFrameworkCore.Relational.dll" DiskId="1" />
