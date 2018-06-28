@@ -7,6 +7,7 @@ using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
+using System.Linq;
 
 namespace Skytecs.Hermes.Controllers
 {
@@ -31,7 +32,23 @@ namespace Skytecs.Hermes.Controllers
         {
             try
             {
-                _fiscalPrinterService.PrintReceipt(receipt);
+                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+                if (servicesWithoutTaxation.Any())
+                {
+                    throw new InvalidOperationException($"Для некоторых услуг не указазана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
+                }
+
+                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
+                {
+                    var subReceipt = new Receipt
+                    {
+                        Items = group.ToList(),
+                        IsPaydByCard = receipt.IsPaydByCard
+                    };
+
+                    _fiscalPrinterService.PrintReceipt(subReceipt);
+                }
+
                 return Ok();
             }
             catch (Exception e)
@@ -46,7 +63,22 @@ namespace Skytecs.Hermes.Controllers
         {
             try
             {
-                _fiscalPrinterService.PrintRefund(receipt);
+                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+                if (servicesWithoutTaxation.Any())
+                {
+                    throw new InvalidOperationException($"Для некоторых услуг не указазана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
+                }
+
+                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
+                {
+                    var subReceipt = new Receipt
+                    {
+                        Items = group.ToList(),
+                        IsPaydByCard = receipt.IsPaydByCard
+                    };
+
+                    _fiscalPrinterService.PrintReceipt(subReceipt);
+                }
                 return Ok();
             }
             catch (Exception e)

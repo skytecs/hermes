@@ -15,6 +15,7 @@ namespace Skytecs.Hermes.Models
         public int VatInfo { get; set; }
         public decimal UnitPrice { get; set; }
         public string UnitName { get; set; }
-        public VatType TaxType { get; internal set; }
+        public VatType? TaxType { get; set; }
+        public TaxationType? TaxationType { get; set; }
     }
 }

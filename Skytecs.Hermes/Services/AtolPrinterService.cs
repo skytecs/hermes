@@ -184,18 +184,25 @@ namespace Skytecs.Hermes.Services
 
                 CheckShiftIsOpend(atolPrinter);
 
-                var items = new List<object>();
+                var items = new List<PositionItem>();
                 foreach (var item in receipt.Items)
                 {
-                    items.Add(new PositionItem
+                    var position = new PositionItem
                     {
                         Name = item.Description,
                         Quantity = item.Quantity,
                         Price = (double)item.Price,
                         Amount = (double)item.Price * item.Quantity,
-                        //TODO: Tax = new Tax { Type = item.TaxType } 
-                        Tax = new Tax { Type = VatType.None }
-                    });
+                    };
+
+                    position.Tax = new Tax { Type = VatType.Vat18 };
+
+                    //if (receipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                    //{
+                    //    position.Tax = new Tax { Type = item.TaxType.Value };
+                    //}
+
+                    items.Add(position);
                 }
 
                 var payments = new List<Payment>();
@@ -208,7 +215,7 @@ namespace Skytecs.Hermes.Services
                 atolPrinter.ExecuteCommand(new PrintReceipt
                 {
                     Type = PrintReceiptCommand.Sell,
-                    //TaxationType = TaxationType.UsnIncomeOutcome,
+                    TaxationType = receipt.Items.First().TaxationType.Value,
                     Items = items,
                     Payments = payments,
                     Operator = GetOperator()
@@ -316,19 +323,27 @@ namespace Skytecs.Hermes.Services
 
                 CheckShiftIsOpend(atolPrinter);
 
-                var items = new List<object>();
+                var items = new List<PositionItem>();
                 foreach (var item in receipt.Items)
                 {
-                    items.Add(new PositionItem
+                    var position = new PositionItem
                     {
                         Name = item.Description,
                         Quantity = item.Quantity,
                         Price = (double)item.Price,
                         Amount = (double)item.Price * item.Quantity,
-                        //TODO: Tax = new Tax { Type = item.TaxType } 
-                        Tax = new Tax { Type = VatType.None }
-                    });
+                    };
+
+                    position.Tax = new Tax { Type = VatType.None };
+
+                    //if (receipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                    //{
+                    //    position.Tax = new Tax { Type = item.TaxType.Value };
+                    //}
+
+                    items.Add(position);
                 }
+
 
                 var payments = new List<Payment>();
                 payments.Add(new Payment
@@ -340,7 +355,7 @@ namespace Skytecs.Hermes.Services
                 atolPrinter.ExecuteCommand(new PrintReceipt
                 {
                     Type = PrintReceiptCommand.SellReturn,
-                    //TaxationType = TaxationType.UsnIncomeOutcome,
+                    TaxationType = receipt.Items.First().TaxationType.Value,
                     Items = items,
                     Payments = payments,
                     Operator = GetOperator()
@@ -944,12 +959,12 @@ namespace Skytecs.Hermes.Services
     [DataContract]
     public enum VatType
     {
-        [EnumMember(Value = "none")] None,
-        [EnumMember(Value = "vat0")] Vat0,
-        [EnumMember(Value = "vat10")] Vat10,
-        [EnumMember(Value = "vat18")] Vat18,
-        [EnumMember(Value = "vat110")] Vat110,
-        [EnumMember(Value = "vat118")] Vat118
+        [EnumMember(Value = "none")] None = 1,
+        [EnumMember(Value = "vat0")] Vat0 = 2,
+        [EnumMember(Value = "vat10")] Vat10 = 3,
+        [EnumMember(Value = "vat18")] Vat18 = 4,
+        [EnumMember(Value = "vat110")] Vat110 = 5,
+        [EnumMember(Value = "vat118")] Vat118 = 6
     }
 
     [DataContract]
@@ -1198,7 +1213,7 @@ namespace Skytecs.Hermes.Services
         public TaxationType TaxationType { get; set; }
 
         [DataMember(Name = "items")]
-        public ICollection<object> Items { get; set; }
+        public ICollection<PositionItem> Items { get; set; }
 
         [DataMember(Name = "payments")]
         public ICollection<Payment> Payments { get; set; }
@@ -1219,12 +1234,12 @@ namespace Skytecs.Hermes.Services
     [DataContract]
     public enum TaxationType
     {
-        [EnumMember(Value = "osn")] Osn,
-        [EnumMember(Value = "usnIncome")] UsnIncome,
-        [EnumMember(Value = "usnIncomeOutcome")] UsnIncomeOutcome,
-        [EnumMember(Value = "envd")] Envd,
-        [EnumMember(Value = "esn")] Esn,
-        [EnumMember(Value = "patent")] Patent
+        [EnumMember(Value = "osn")] Osn = 1,
+        [EnumMember(Value = "usnIncome")] UsnIncome = 2,
+        [EnumMember(Value = "usnIncomeOutcome")] UsnIncomeOutcome = 3,
+        [EnumMember(Value = "envd")] Envd = 4,
+        [EnumMember(Value = "esn")] Esn = 5,
+        [EnumMember(Value = "patent")] Patent = 6
     }
 
     [DataContract]
