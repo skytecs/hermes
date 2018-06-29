@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Skytecs.Hermes.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,12 +15,17 @@ namespace Skytecs.Hermes.Services
 {
     public class AtolWrapper : IDisposable
     {
+        private readonly ILogger<AtolPrinterService> _logger;
+
+    
         private IntPtr _fptr;
         private int _deviceId;
 
-        public AtolWrapper(IOptions<FiscalPrinterSettings> config)
+        public AtolWrapper(ILogger<AtolPrinterService> logger, IOptions<FiscalPrinterSettings> config)
             : this(config.Value.Port, config.Value.DeviceId)
         {
+            Check.NotNull(logger, nameof(logger));
+            _logger = logger;
         }
 
         public AtolWrapper(int portNumber, int deviceId)
@@ -128,6 +135,7 @@ namespace Skytecs.Hermes.Services
             }
 
             //log json
+            _logger.Info($"Выполнение команды '{typeof(TCommand).Name}'. Параметры:\n{json}");
 
             libfptr_set_param_str(_fptr, (int)param.LIBFPTR_PARAM_JSON_DATA, json);
             var status = libfptr_process_json(_fptr);
@@ -136,6 +144,9 @@ namespace Skytecs.Hermes.Services
                 (var code, var message) = GetLastError();
                 throw new InvalidOperationException($"{code} - {message}");
             }
+
+            _logger.Info($"Выполнение команды '{typeof(TCommand).Name}' успешно завершено.");
+
         }
 
         public TCommandResponse ExecuteCommand<TCommand, TCommandResponse>(TCommand command)
@@ -162,6 +173,7 @@ namespace Skytecs.Hermes.Services
             }
 
             //log json
+            _logger.Info($"Выполнение команды '{typeof(TCommand).Name}' с ответом. Параметры:\n{json}");
 
             libfptr_set_param_str(_fptr, (int)param.LIBFPTR_PARAM_JSON_DATA, json);
             var status = libfptr_process_json(_fptr);
@@ -184,6 +196,8 @@ namespace Skytecs.Hermes.Services
             }
 
             //log result
+            _logger.Info($"Команда '{typeof(TCommand).Name}'. Ответ:\n{result}");
+
 
             using (var stringReader = new StringReader(result.ToString()))
             using (var jsonReader = new JsonTextReader(stringReader))

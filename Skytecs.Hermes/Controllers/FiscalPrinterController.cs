@@ -32,23 +32,7 @@ namespace Skytecs.Hermes.Controllers
         {
             try
             {
-                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
-                if (servicesWithoutTaxation.Any())
-                {
-                    throw new InvalidOperationException($"Для некоторых услуг не указазана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
-                }
-
-                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
-                {
-                    var subReceipt = new Receipt
-                    {
-                        Items = group.ToList(),
-                        IsPaydByCard = receipt.IsPaydByCard
-                    };
-
-                    _fiscalPrinterService.PrintReceipt(subReceipt);
-                }
-
+                _fiscalPrinterService.PrintReceipt(receipt);
                 return Ok();
             }
             catch (Exception e)
@@ -63,22 +47,7 @@ namespace Skytecs.Hermes.Controllers
         {
             try
             {
-                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
-                if (servicesWithoutTaxation.Any())
-                {
-                    throw new InvalidOperationException($"Для некоторых услуг не указазана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
-                }
-
-                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
-                {
-                    var subReceipt = new Receipt
-                    {
-                        Items = group.ToList(),
-                        IsPaydByCard = receipt.IsPaydByCard
-                    };
-
-                    _fiscalPrinterService.PrintReceipt(subReceipt);
-                }
+                _fiscalPrinterService.PrintRefund(receipt);
                 return Ok();
             }
             catch (Exception e)
@@ -165,4 +134,4 @@ namespace Skytecs.Hermes.Controllers
         }
 
     }
-} 
+}

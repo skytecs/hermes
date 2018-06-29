@@ -51,7 +51,7 @@ namespace Skytecs.Hermes.Models
             {
                 if (!_total.HasValue)
                 {
-                    _total = (double)Items.Sum(x => x.Price * x.Quantity);
+                    _total = (double)Items.Sum(x => x.Price);
                 }
 
                 return _total;

@@ -27,46 +27,6 @@ namespace Skytecs.Hermes.Services
             _logger = logger;
             _sessionStorage = sessionStorage;
             _config = config;
-
-            //_logger.Info("Инициализация сервиса печати чеков Атол.");
-
-            //using (var atolPrinter = new AtolWrapper(_config))
-            //{
-            //    Console.WriteLine(atolPrinter.GetSettings());
-
-            //    atolPrinter.Open();
-
-            //    atolPrinter.IsOpened();
-
-            //}
-
-            /*using (var factory = new FiscalPrinterFactory(_config))
-            {
-                var printer = factory.GetPrinter();
-
-                _logger.Info("Проверка состояния ККМ.");
-                if (printer.GetStatus() != 0)
-                {
-                    throw new InvalidOperationException($"Неверное состояние ККМ: {printer.GetLastError()}");
-                }
-                _logger.Info("Проверка состояния ККМ завершена успешно.");
-
-                // если есть открытый чек, то отменяем его
-                if (printer.CheckState != 0)
-                {
-                    _logger.Info("Отмена открытого чека.");
-                    if (printer.CancelCheck() != 0)
-                    {
-                        throw new InvalidOperationException($"Не удалось отменить окрытый чек.");
-                    }
-                }
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-                _logger.Info("Инициализация сервиса печати чеков Атол завершена.");
-            }*/
         }
 
         public void CheckConnection()
@@ -83,7 +43,7 @@ namespace Skytecs.Hermes.Services
 
         public void OpenSession(int cashierId, string cashierName)
         {
-            using (var atolPrinter = new AtolWrapper(_config))
+            using (var atolPrinter = new AtolWrapper(_logger, _config))
             {
                 atolPrinter.Open();
 
@@ -104,71 +64,6 @@ namespace Skytecs.Hermes.Services
                 });
             }
 
-            /*using (var factory = new FiscalPrinterFactory(_config))
-            {
-                var printer = factory.GetPrinter();
-
-                _logger.Info($"Попытка открытия смены для кассира {cashierId} ({cashierName}).\nПроверка статуса текущей смены.");
-                if (printer.SessionOpened)
-                {
-                    _logger.Info("Смена открыта.");
-
-                    if (printer.SessionExceedLimit)
-                    {
-                        throw new InvalidOperationException("Текущая смена привысила 24 часа.");
-                    }
-
-                    _logger.Info("Получение информации по текущей смене.");
-                    var session = _sessionStorage.Get();
-                    if (session == null)
-                    {
-                        throw new InvalidOperationException("Информация по текущей смене не найдена.");
-                    }
-
-                    _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
-
-                    if (session.CashierId == cashierId)
-                    {
-                        throw new InvalidOperationException("Смена для запрошенного кассира уже открыта.");
-                    }
-
-                    throw new InvalidOperationException("Смена открыта для другого кассира.");
-                }
-                else
-                {
-                    _logger.Info("Смена закрыта.");
-
-                    var session = new CashierSession(cashierId, cashierName);
-
-                    _logger.Info("Переход в режим 1 для открытия смены.");
-
-                    printer.Mode = 1;
-                    printer.Password = session.CashierId.ToString();
-                    if (printer.SetMode() != 0)
-                    {
-                        throw new InvalidOperationException($"Не удалось перейти в режим 1. \n{printer.ResultCode} - { printer.ResultDescription}");
-                    }
-
-                    SetCachier(printer, session.CashierName);
-
-                    session.SessionStart = DateTime.Now;
-
-                    _sessionStorage.Set(session);
-
-                    _logger.Info("Открытие смены.");
-
-                    if (printer.OpenSession() != 0)
-                    {
-                        _sessionStorage.Remove();
-                        throw new InvalidOperationException($"Не удалось открыть сессию для кассира {session.CashierId} ({session.CashierName}).  \n{printer.ResultCode} - { printer.ResultDescription}");
-                    }
-                }
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-            }*/
         }
 
         public void PrintReceipt(Receipt receipt)
@@ -176,138 +71,67 @@ namespace Skytecs.Hermes.Services
             Check.NotNull(receipt, nameof(receipt));
             Check.NotNull(receipt.Sum, nameof(receipt.Sum));
 
-            _logger.Info("Печать чека");
-
-            using (var atolPrinter = new AtolWrapper(_config))
+            var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+            if (servicesWithoutTaxation.Any())
             {
-                atolPrinter.Open();
-
-                CheckShiftIsOpend(atolPrinter);
-
-                var items = new List<PositionItem>();
-                foreach (var item in receipt.Items)
-                {
-                    var position = new PositionItem
-                    {
-                        Name = item.Description,
-                        Quantity = item.Quantity,
-                        Price = (double)item.Price,
-                        Amount = (double)item.Price * item.Quantity,
-                    };
-
-                    position.Tax = new Tax { Type = VatType.Vat18 };
-
-                    //if (receipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                    //{
-                    //    position.Tax = new Tax { Type = item.TaxType.Value };
-                    //}
-
-                    items.Add(position);
-                }
-
-                var payments = new List<Payment>();
-                payments.Add(new Payment
-                {
-                    Sum = (double)receipt.Sum,
-                    Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
-                });
-
-                atolPrinter.ExecuteCommand(new PrintReceipt
-                {
-                    Type = PrintReceiptCommand.Sell,
-                    TaxationType = receipt.Items.First().TaxationType.Value,
-                    Items = items,
-                    Payments = payments,
-                    Operator = GetOperator()
-                });
+                throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
             }
 
-            /*
-            using (var factory = new FiscalPrinterFactory(_config))
+            foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
             {
-                var printer = factory.GetPrinter();
-
-                if (!printer.SessionOpened)
+                var subReceipt = new Receipt
                 {
-                    throw new InvalidOperationException("Смена закрыта.");
-                }
-                if (printer.SessionExceedLimit)
+                    Items = group.ToList(),
+                    IsPaydByCard = receipt.IsPaydByCard
+                };
+
+                _logger.Info("Печать чека.");
+
+                using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
-                    throw new InvalidOperationException("Текущая смена привысила 24 часа.");
-                }
+                    atolPrinter.Open();
 
-                _logger.Info("Смена открыта.\nПолучение информации по текущей смене.");
+                    CheckShiftIsOpend(atolPrinter);
 
-                var session = _sessionStorage.Get();
-                if (session == null)
-                {
-                    throw new InvalidOperationException("Информация по текущей смене не найдена");
-                }
-                _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
-
-                SetCachier(printer, session.CashierName);
-
-                CloseCheck(printer);
-
-                printer.Mode = 1;
-                if (printer.SetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим 1. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Создание чека.");
-
-                if (printer.NewDocument() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось создать чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек создан успешно.\nОткрытие чека.");
-
-                printer.CheckType = 1;
-                printer.CheckMode = 1;
-                if (printer.OpenCheck() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось открыть чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек открыт успешно.\nПечать позиций чека.");
-
-                foreach (var item in receipt.Items)
-                {
-                    if (PrintItem(printer, item) != 0)
+                    var items = new List<PositionItem>();
+                    foreach (var item in subReceipt.Items)
                     {
-                        throw new InvalidOperationException($"Не удалось зарегистрировать позицию \"{item.Description}\" (цена: {item.Price}, количество: {item.Quantity}). \n{printer.ResultCode} - { printer.ResultDescription}");
+                        var position = new PositionItem
+                        {
+                            Name = item.Description,
+                            Quantity = item.Quantity,
+                            Price = (double)item.UnitPrice,
+                            Amount = (double)item.Price,
+                            PaymentObject = item.PaymentObjectType,
+                        };
+
+                        position.Tax = new Tax { Type = VatType.None };
+
+                        //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                        //{
+                        //    position.Tax = new Tax { Type = item.TaxType.Value };
+                        //}
+
+                        items.Add(position);
                     }
-                }
 
-                _logger.Info("Печать позиций чека завершена.");
+                    var payments = new List<Payment>();
+                    payments.Add(new Payment
+                    {
+                        Sum = (double)subReceipt.Sum,
+                        Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                    });
 
-                printer.TypeClose = receipt.IsPaydByCard ? 1 : 0;
-                printer.Summ = (double)receipt.Sum;
-
-                _logger.Info($"Регистрация платежа на сумму {printer.Summ}.");
-
-                if (printer.Payment() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось зарегистрировать платеж (сумма - {printer.Summ}). \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Платеж зарегистрирован.\nЗакрытие чека.");
-
-                if (printer.CloseCheck() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось закрыть чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек закрыт.\nПечать чека завершена успешно.");
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
+                    atolPrinter.ExecuteCommand(new PrintReceipt
+                    {
+                        Type = PrintReceiptCommand.Sell,
+                        TaxationType = subReceipt.Items.First().TaxationType.Value,
+                        Items = items,
+                        Payments = payments,
+                        Operator = GetOperator()
+                    });
                 }
             }
-            */
         }
 
         public void PrintRefund(Receipt receipt)
@@ -315,137 +139,67 @@ namespace Skytecs.Hermes.Services
             Check.NotNull(receipt, nameof(receipt));
             Check.NotNull(receipt.Sum, nameof(receipt.Sum));
 
-            _logger.Info("Печать чека возврата.");
-
-            using (var atolPrinter = new AtolWrapper(_config))
+            var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+            if (servicesWithoutTaxation.Any())
             {
-                atolPrinter.Open();
-
-                CheckShiftIsOpend(atolPrinter);
-
-                var items = new List<PositionItem>();
-                foreach (var item in receipt.Items)
-                {
-                    var position = new PositionItem
-                    {
-                        Name = item.Description,
-                        Quantity = item.Quantity,
-                        Price = (double)item.Price,
-                        Amount = (double)item.Price * item.Quantity,
-                    };
-
-                    position.Tax = new Tax { Type = VatType.None };
-
-                    //if (receipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                    //{
-                    //    position.Tax = new Tax { Type = item.TaxType.Value };
-                    //}
-
-                    items.Add(position);
-                }
-
-
-                var payments = new List<Payment>();
-                payments.Add(new Payment
-                {
-                    Sum = (double)receipt.Sum,
-                    Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
-                });
-
-                atolPrinter.ExecuteCommand(new PrintReceipt
-                {
-                    Type = PrintReceiptCommand.SellReturn,
-                    TaxationType = receipt.Items.First().TaxationType.Value,
-                    Items = items,
-                    Payments = payments,
-                    Operator = GetOperator()
-                });
+                throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
             }
 
-            /*
-            using (var factory = new FiscalPrinterFactory(_config))
+            foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
             {
-                var printer = factory.GetPrinter();
-
-
-                if (!printer.SessionOpened)
+                var subReceipt = new Receipt
                 {
-                    throw new InvalidOperationException("Не удалось напечатать чек. Смена закрыта.");
-                }
+                    Items = group.ToList(),
+                    IsPaydByCard = receipt.IsPaydByCard
+                };
 
-                _logger.Info("Смена открыта.\nПолучение информации по текущей смене.");
+                _logger.Info("Печать чека возврата.");
 
-                var session = _sessionStorage.Get();
-                if (session == null)
+                using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
-                    throw new InvalidOperationException("Информация по текущей смене не найдена.");
-                }
+                    atolPrinter.Open();
 
-                _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
+                    CheckShiftIsOpend(atolPrinter);
 
-                SetCachier(printer, session.CashierName);
-
-                CloseCheck(printer);
-
-                printer.Mode = 1;
-                if (printer.SetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим 1. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Создание чека.");
-
-                if (printer.NewDocument() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось создать чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек создан успешно.\nОткрытие чека.");
-
-                printer.CheckType = 2;
-                printer.CheckMode = 1;
-                if (printer.OpenCheck() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось открыть чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек открыт успешно.");
-
-                if (printer.WriteAttribute() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось указать систему налогообложения. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Система налогообложения задана.\nПечать позиций чека");
-                foreach (var item in receipt.Items)
-                {
-                    if (PrintRefundItem(printer, item) != 0)
+                    var items = new List<PositionItem>();
+                    foreach (var item in subReceipt.Items)
                     {
-                        throw new InvalidOperationException($"Не удалось зарегистрировать позицию \"{item.Description}\" (цена: {item.Price}, количество: {item.Quantity}). \n{printer.ResultCode} - { printer.ResultDescription}");
+                        var position = new PositionItem
+                        {
+                            Name = item.Description,
+                            Quantity = item.Quantity,
+                            Price = (double)item.UnitPrice,
+                            Amount = (double)item.Price,
+                        };
+
+                        position.Tax = new Tax { Type = VatType.None };
+
+                        //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                        //{
+                        //    position.Tax = new Tax { Type = item.TaxType.Value };
+                        //}
+
+                        items.Add(position);
                     }
-                }
 
-                _logger.Info("Печать позиций чека завершена.");
 
-                printer.TypeClose = receipt.IsPaydByCard ? 1 : 0;
-                printer.Summ = (double)receipt.Sum;
-                printer.Destination = 0;
+                    var payments = new List<Payment>();
+                    payments.Add(new Payment
+                    {
+                        Sum = (double)subReceipt.Sum,
+                        Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                    });
 
-                _logger.Info("Закрытие чека.");
-
-                if (printer.CloseCheck() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось закрыть чек. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Чек закрыт.\nПечать чека завершена успешно.");
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
+                    atolPrinter.ExecuteCommand(new PrintReceipt
+                    {
+                        Type = PrintReceiptCommand.SellReturn,
+                        TaxationType = subReceipt.Items.First().TaxationType.Value,
+                        Items = items,
+                        Payments = payments,
+                        Operator = GetOperator()
+                    });
                 }
             }
-            */
         }
 
         public void PrintCorrection(CorrectionReceipt receipt)
@@ -454,7 +208,7 @@ namespace Skytecs.Hermes.Services
 
             _logger.Info("Печать чека коррекции.");
 
-            using (var atolPrinter = new AtolWrapper(_config))
+            using (var atolPrinter = new AtolWrapper(_logger, _config))
             {
                 atolPrinter.Open();
 
@@ -523,7 +277,7 @@ namespace Skytecs.Hermes.Services
         {
             _logger.Info("Снятие Z-отчета.");
 
-            using (var atolPrinter = new AtolWrapper(_config))
+            using (var atolPrinter = new AtolWrapper(_logger, _config))
             {
                 atolPrinter.Open();
                 atolPrinter.ExecuteCommand(new CloseShift
@@ -537,61 +291,13 @@ namespace Skytecs.Hermes.Services
             _logger.Info("Удаление данных о текущей смене завершено.");
 
 
-            /*
-            using (var factory = new FiscalPrinterFactory(_config))
-            {
-                var printer = factory.GetPrinter();
-
-                if (!printer.SessionOpened)
-                {
-                    _logger.Info("Текущая смена уже закрыта.");
-                    _sessionStorage.Remove();
-                    return;
-                }
-                _logger.Info("Текущая смены открыта.\nПолучение информации по текущей смене.");
-
-                var session = _sessionStorage.Get();
-                if (session != null)
-                {
-                    _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
-
-                    SetCachier(printer, session.CashierName);
-                }
-
-                _logger.Info("Переход в режим 3 для снятия z-отчета.");
-
-                printer.Password = "30";
-                printer.Mode = 3;
-
-                if (printer.SetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим 3. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Печать z-отчета");
-                printer.ReportType = 1;
-
-                if (printer.Report() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось сформировать отчет типа 3. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-                _logger.Info("Печать z-отчета завершена успешно.\nЗакрытие текущей смены.");
-                _sessionStorage.Remove();
-                _logger.Info("Текущая смена закрыта.");
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-            }
-            */
         }
 
         public void PrintXReport()
         {
             _logger.Info("Снятие X-отчета.");
 
-            using (var atolPrinter = new AtolWrapper(_config))
+            using (var atolPrinter = new AtolWrapper(_logger, _config))
             {
                 atolPrinter.Open();
 
@@ -605,53 +311,6 @@ namespace Skytecs.Hermes.Services
 
             _logger.Info("Печать X-отчета завершена успешно.");
 
-            /*
-            using (var factory = new FiscalPrinterFactory(_config))
-            {
-                var printer = factory.GetPrinter();
-
-                if (!printer.SessionOpened)
-                {
-                    throw new InvalidOperationException("Текущая смены уже закрыта.");
-                }
-
-                _logger.Info("Текущая смены открыта.\nПолучение информации по текущей смене.");
-
-                var session = _sessionStorage.Get();
-                if (session == null)
-                {
-                    throw new InvalidOperationException("Информация по текущей смене не найдена.");
-                }
-
-                _logger.Info($"Информация по текущей смене получена. Кассир {session.CashierId} ({session.CashierName}). Дата открытия: {session.SessionStart.ToString("dd.mm.yy hh:MM:ss")} ");
-
-                SetCachier(printer, session.CashierName);
-
-                _logger.Info("Переход в режим 2 для снятия X-отчета.");
-                // устанавливаем пароль администратора ККМ
-                printer.Password = "29";
-                // входим в режим отчетов без гашения
-                printer.Mode = 2;
-                if (printer.SetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим 2. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Печать X-отчета.");
-                printer.ReportType = 2;
-                if (printer.Report() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось сформировать отчет типа 2. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-
-                _logger.Info("Печать X-отчета завершена успешно.");
-
-                if (printer.ResetMode() != 0)
-                {
-                    throw new InvalidOperationException($"Не удалось перейти в режим выбора. \n{printer.ResultCode} - { printer.ResultDescription}");
-                }
-            }
-            */
         }
 
         private void CheckShiftIsOpend(AtolWrapper printer)
@@ -1156,33 +815,33 @@ namespace Skytecs.Hermes.Services
     }
 
     [DataContract]
-    public enum PaymentObject
+    public enum PaymentMethod
     {
-        FullPrepayment,
-        Prepayment,
-        Advance,
-        FullPayment,
-        PartialPayment,
-        Credit,
-        CreditPayment
+        [DataMember(Name = "fullPrepayment")] FullPrepayment = 1,
+        [DataMember(Name = "prepayment")] Prepayment = 2,
+        [DataMember(Name = "advance")] Advance = 3,
+        [DataMember(Name = "fullPayment")] FullPayment = 4,
+        [DataMember(Name = "partialPayment")] PartialPayment = 5,
+        [DataMember(Name = "credit")] Credit = 6,
+        [DataMember(Name = "creditPayment")] CreditPayment = 7
     }
 
     [DataContract]
-    public enum PaymentMethod
+    public enum PaymentObject
     {
-        Commodity,
-        Excise,
-        Job,
-        Service,
-        GamblingBet,
-        GamblingPrize,
-        Lottery,
-        LotteryPrize,
-        IntellectualActivity,
-        Payment,
-        AgentCommission,
-        Composite,
-        Another
+        [DataMember(Name = "commodity")] Commodity = 1,
+        [DataMember(Name = "excise")] Excise = 2,
+        [DataMember(Name = "lob")] Job = 3,
+        [DataMember(Name = "service")] Service = 4,
+        [DataMember(Name = "gamblingBet")] GamblingBet = 5,
+        [DataMember(Name = "gamblingPrize")] GamblingPrize = 6,
+        [DataMember(Name = "lottery")] Lottery = 7,
+        [DataMember(Name = "lotteryPrize")] LotteryPrize = 8,
+        [DataMember(Name = "intellectualActivity")] IntellectualActivity = 9,
+        [DataMember(Name = "payment")] Payment = 10,
+        [DataMember(Name = "agentCommission")] AgentCommission = 11,
+        [DataMember(Name = "composite")] Composite = 12,
+        [DataMember(Name = "another")] Another = 13
     }
 
     [DataContract]
