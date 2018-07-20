@@ -63,6 +63,9 @@ namespace Skytecs.Hermes
             services.AddTransient<ISessionStorage, TempStorage>();
             services.AddSingleton<CentrifugoClient>();
             services.AddTransient<IBarcodePrinterService, ZebraPrinterService>();
+
+            services.AddCentrifugoHandler<FiscalPrinterNotificationHandler>();
+
             services.AddCors();
             services.AddMvc();
             services.Configure<FiscalPrinterSettings>(Configuration);
@@ -103,43 +106,50 @@ namespace Skytecs.Hermes
 
     public static class CentrifugoExtensions
     {
-        private static ILogger<CentrifugoClient> _logger;
-        private static IFiscalPrinterService _fiscalPrinterService;
-        private static IBarcodePrinterService _barcodePrinterService;
-        private static string _clinicUrl;
-        private static DataContext _dataContext;
+        public static IServiceCollection AddCentrifugoHandler<THandler>(this IServiceCollection services)
+            where THandler : class, ICentrifugoHandler
+        {
+            return services.AddSingleton<ICentrifugoHandler, THandler>();
+        }
 
         public static IApplicationBuilder StartCentrifugoListener(this IApplicationBuilder app)
         {
-            try
+            var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
+            if (!config.Value.EnableCentrifugoListener)
             {
-                _logger = app.ApplicationServices.GetService<ILogger<CentrifugoClient>>();
-                _fiscalPrinterService = app.ApplicationServices.GetService<IFiscalPrinterService>();
-                _barcodePrinterService = app.ApplicationServices.GetService<IBarcodePrinterService>();
-
-                var config = app.ApplicationServices.GetService<IOptions<CommonSettings>>();
-                if (!config.Value.EnableCentrifugoListener)
-                {
-                    return app;
-                }
-
-                _clinicUrl = config.Value.ClinicUrl;
-
-                var client = app.ApplicationServices.GetService<CentrifugoClient>();
-                client.Connect()
-                    .ContinueWith(x => client.Subscribe())
-                    .ContinueWith(x => client.Listen(FiscalPrinterNotificationHandler));
-                _dataContext = app.ApplicationServices.GetService<DataContext>();
-
+                return app;
             }
-            catch (Exception e)
-            {
-                _logger.Error(e);
-            }
+            
+            var client = app.ApplicationServices.GetService<CentrifugoClient>();
+            var handler = app.ApplicationServices.GetService<ICentrifugoHandler>();
+            client.Connect().ContinueWith(x => client.Subscribe()).ContinueWith(x => client.Listen(handler));
+
             return app;
         }
+    }
 
-        public static void FiscalPrinterNotificationHandler(JObject jsonData)
+    public interface ICentrifugoHandler
+    {
+        void Handle(JObject jsonData);
+    }
+
+    public class FiscalPrinterNotificationHandler : ICentrifugoHandler
+    {
+        private readonly ILogger<FiscalPrinterNotificationHandler> _logger;
+        private readonly IFiscalPrinterService _fiscalPrinterService;
+        private readonly IBarcodePrinterService _barcodePrinterService;
+        private readonly string _clinicUrl;
+        private readonly DataContext _dataContext;
+
+        public FiscalPrinterNotificationHandler(ILogger<FiscalPrinterNotificationHandler> logger, IFiscalPrinterService fiscalPrinterService, IBarcodePrinterService barcodePrinterService, DataContext dataContext, IOptions<CommonSettings> settings)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _fiscalPrinterService = fiscalPrinterService ?? throw new ArgumentNullException(nameof(fiscalPrinterService));
+            _barcodePrinterService = barcodePrinterService ?? throw new ArgumentNullException(nameof(barcodePrinterService));
+            _dataContext = dataContext ?? throw new ArgumentNullException(nameof(dataContext));
+            _clinicUrl = (settings ?? throw new ArgumentNullException(nameof(dataContext))).Value.ClinicUrl;
+        }
+        public void Handle(JObject jsonData)
         {
             if (jsonData == null)
             {
@@ -181,6 +191,9 @@ namespace Skytecs.Hermes
                         _fiscalPrinterService.PrintXReport();
                         break;
                     case "zreport":
+                        _fiscalPrinterService.PrintZReport();
+                        break;
+                    case "correction":
                         _fiscalPrinterService.PrintZReport();
                         break;
 
@@ -255,5 +268,6 @@ namespace Skytecs.Hermes
         public static string OpenSession { get { return "openSession"; } }
         public static string XReport { get { return "xreport"; } }
         public static string ZReport { get { return "zreport"; } }
+        public static string Correction { get { return "correction"; } }
     }
 }

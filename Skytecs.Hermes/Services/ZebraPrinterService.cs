@@ -13,6 +13,7 @@ namespace Skytecs.Hermes.Services
 {
     public class ZebraPrinterService : IBarcodePrinterService
     {
+        private static object _lock = new object();
         private readonly IOptions<BarcodePrinterSettings> _settings;
 
         // Structure and API declarions:
@@ -57,79 +58,82 @@ namespace Skytecs.Hermes.Services
 
         public bool Send(BarcodePrinterData data)
         {
-            if (data == null)
+            lock (_lock)
             {
-                throw new ArgumentNullException("data");
-            }
 
-            if (String.IsNullOrEmpty(data.Labels))
-            {
-                throw new ArgumentNullException("data.Labels");
-            }
-
-            var printerName = _settings.Value.BarcodePrinterName;
-            if (String.IsNullOrWhiteSpace(printerName))
-            {
-                throw new ArgumentNullException("printerName");
-            }
-
-            var task = "";
-            foreach (var label in data.Labels)
-            {
-                task += label;
-            }
-
-            var bytes = Encoding.GetEncoding(1251).GetBytes(task);
-
-            Int32 dwWritten = 0;
-            IntPtr hPrinter = new IntPtr(0);
-            DOCINFOA di = new DOCINFOA();
-            bool bSuccess = false; // Assume failure unless you specifically succeed.
-
-            di.pDocName = "My C#.NET RAW Document";
-            di.pDataType = "RAW";
-
-            // Open the printer.
-            if (OpenPrinter(printerName.Normalize(), out hPrinter, IntPtr.Zero))
-            {
-                // Start a document.
-                if (StartDocPrinter(hPrinter, 1, di))
+                if (data == null)
                 {
-                    // Start a page.
-                    if (StartPagePrinter(hPrinter))
-                    {
-                        IntPtr pUnmanagedBytes = IntPtr.Zero;
-                        try
-                        {
-                            var nLength = bytes.Length;
-                            pUnmanagedBytes = Marshal.AllocCoTaskMem(nLength);
-                            // Copy the managed byte array into the unmanaged array.
-                            Marshal.Copy(bytes, 0, pUnmanagedBytes, nLength);
-                            // Send the unmanaged bytes to the printer.
-                            bSuccess = WritePrinter(hPrinter, pUnmanagedBytes, nLength, out dwWritten);
-                        }
-                        finally
-                        {
-                            EndPagePrinter(hPrinter);
-                            if (pUnmanagedBytes != IntPtr.Zero)
-                            {
-                                Marshal.FreeCoTaskMem(pUnmanagedBytes);
-                            }
-                        }
-                        // Write your bytes.
-                    }
-                    EndDocPrinter(hPrinter);
+                    throw new ArgumentNullException("data");
                 }
-                ClosePrinter(hPrinter);
-            }
-            // If you did not succeed, GetLastError may give more information
-            // about why not.
-            if (!bSuccess)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "My custom error message.");
-            }
-            return bSuccess;
-        }
 
+                if (String.IsNullOrEmpty(data.Labels))
+                {
+                    throw new ArgumentNullException("data.Labels");
+                }
+
+                var printerName = _settings.Value.BarcodePrinterName;
+                if (String.IsNullOrWhiteSpace(printerName))
+                {
+                    throw new ArgumentNullException("printerName");
+                }
+
+                var task = "";
+                foreach (var label in data.Labels)
+                {
+                    task += label;
+                }
+
+                var bytes = Encoding.GetEncoding(1251).GetBytes(task);
+
+                Int32 dwWritten = 0;
+                IntPtr hPrinter = new IntPtr(0);
+                DOCINFOA di = new DOCINFOA();
+                bool bSuccess = false; // Assume failure unless you specifically succeed.
+
+                di.pDocName = "My C#.NET RAW Document";
+                di.pDataType = "RAW";
+
+                // Open the printer.
+                if (OpenPrinter(printerName.Normalize(), out hPrinter, IntPtr.Zero))
+                {
+                    // Start a document.
+                    if (StartDocPrinter(hPrinter, 1, di))
+                    {
+                        // Start a page.
+                        if (StartPagePrinter(hPrinter))
+                        {
+                            IntPtr pUnmanagedBytes = IntPtr.Zero;
+                            try
+                            {
+                                var nLength = bytes.Length;
+                                pUnmanagedBytes = Marshal.AllocCoTaskMem(nLength);
+                                // Copy the managed byte array into the unmanaged array.
+                                Marshal.Copy(bytes, 0, pUnmanagedBytes, nLength);
+                                // Send the unmanaged bytes to the printer.
+                                bSuccess = WritePrinter(hPrinter, pUnmanagedBytes, nLength, out dwWritten);
+                            }
+                            finally
+                            {
+                                EndPagePrinter(hPrinter);
+                                if (pUnmanagedBytes != IntPtr.Zero)
+                                {
+                                    Marshal.FreeCoTaskMem(pUnmanagedBytes);
+                                }
+                            }
+                            // Write your bytes.
+                        }
+                        EndDocPrinter(hPrinter);
+                    }
+                    ClosePrinter(hPrinter);
+                }
+                // If you did not succeed, GetLastError may give more information
+                // about why not.
+                if (!bSuccess)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "My custom error message.");
+                }
+                return bSuccess;
+            }
+        }
     }
 }

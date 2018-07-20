@@ -16,7 +16,7 @@ namespace Skytecs.Hermes
 {
     public class CentrifugoClient : IDisposable
     {
-        private object _lock = new object();
+        private static object _lock = new object();
         private const int _sendChunkSize = 256;
         private const int _receiveChunkSize = 256;
         private const bool _verbose = true;
@@ -69,8 +69,8 @@ namespace Skytecs.Hermes
                 }
             };
 
-            await Send(_webSocket, JsonConvert.SerializeObject(message));
-            await Receive(_webSocket);
+            await Send(_webSocket, JsonConvert.SerializeObject(message)).ContinueWith(task => Receive(_webSocket));
+
         }
 
         public async Task Unsubscribe(string channel)
@@ -89,7 +89,7 @@ namespace Skytecs.Hermes
             await Receive(_webSocket);
         }
 
-        public async Task Listen(Action<JObject> onMessageReceived)
+        public async Task Listen(ICentrifugoHandler handler)
         {
             _logger.Info("Listen");
             while (true)
@@ -106,22 +106,21 @@ namespace Skytecs.Hermes
                     }
                     else
                     {
-                        lock (_lock)
+
+                        try
                         {
-                            try
-                            {
-                                var data = _encoder.GetString(buffer);
-                                _logger.Info($"Response\n{data}");
+                            var data = _encoder.GetString(buffer);
+                            _logger.Info($"Response\n{data}");
 
-                                var response = JsonConvert.DeserializeObject<Response>(data);
+                            var response = JsonConvert.DeserializeObject<Response>(data);
+                            handler.Handle(response.Body.Data);
 
-                                onMessageReceived(response.Body.Data);
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.Error(e);
-                            }
                         }
+                        catch (Exception e)
+                        {
+                            _logger.Error(e);
+                        }
+
                     }
                 }
 
@@ -240,19 +239,8 @@ namespace Skytecs.Hermes
 
         private void LogStatus(bool receiving, byte[] buffer, int length)
         {
-
-            lock (_lock)
-            {
-                //Console.ForegroundColor = receiving ? ConsoleColor.Green : ConsoleColor.Gray;
-                //Console.WriteLine("{0} ", receiving ? "Received" : "Sent"); 
-
-                //if (_verbose)
-                string way = receiving ? "Received" : "Sent";
-                _logger.Info($"{way}\n{_encoder.GetString(buffer)}\n");
-
-                //Console.ResetColor();
-            }
-
+            string way = receiving ? "Received" : "Sent";
+            _logger.Info($"{way}\n{_encoder.GetString(buffer)}\n");
         }
 
         public void Dispose()

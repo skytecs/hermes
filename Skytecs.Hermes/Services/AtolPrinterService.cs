@@ -14,6 +14,8 @@ namespace Skytecs.Hermes.Services
 {
     public class AtolPrinterService : IFiscalPrinterService
     {
+        private static object _lock = new object();
+
         private readonly ILogger<AtolPrinterService> _logger;
         private readonly ISessionStorage _sessionStorage;
         private readonly IOptions<FiscalPrinterSettings> _config;
@@ -43,117 +45,181 @@ namespace Skytecs.Hermes.Services
 
         public void OpenSession(int cashierId, string cashierName)
         {
-            using (var atolPrinter = new AtolWrapper(_logger, _config))
+            lock (_lock)
             {
-                atolPrinter.Open();
-
-                CheckShiftIsClosed(atolPrinter);
-
-                _logger.Info($"Открытие смены для кассира {cashierId} ({cashierName}).");
-
-                var session = new CashierSession(cashierId, cashierName);
-                session.SessionStart = DateTime.Now;
-
-                _sessionStorage.Set(session);
-
-                _logger.Info("Открытие смены.");
-
-                atolPrinter.ExecuteCommand(new OpenShift
-                {
-                    Operator = GetOperator()
-                });
-            }
-
-        }
-
-        public void PrintReceipt(Receipt receipt)
-        {
-            Check.NotNull(receipt, nameof(receipt));
-            Check.NotNull(receipt.Sum, nameof(receipt.Sum));
-
-            var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
-            if (servicesWithoutTaxation.Any())
-            {
-                throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
-            }
-
-            foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
-            {
-                var subReceipt = new Receipt
-                {
-                    Items = group.ToList(),
-                    IsPaydByCard = receipt.IsPaydByCard
-                };
-
-                _logger.Info("Печать чека.");
-
                 using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
                     atolPrinter.Open();
 
-                    CheckShiftIsOpend(atolPrinter);
+                    CheckShiftIsClosed(atolPrinter);
 
-                    var items = new List<PositionItem>();
-                    foreach (var item in subReceipt.Items)
+                    _logger.Info($"Открытие смены для кассира {cashierId} ({cashierName}).");
+
+                    var session = new CashierSession(cashierId, cashierName);
+                    session.SessionStart = DateTime.Now;
+
+                    _sessionStorage.Set(session);
+
+                    _logger.Info("Открытие смены.");
+
+                    atolPrinter.ExecuteCommand(new OpenShift
                     {
-                        var position = new PositionItem
-                        {
-                            Name = item.Description,
-                            Quantity = item.Quantity,
-                            Price = (double)item.UnitPrice,
-                            Amount = (double)item.Price,
-                            PaymentObject = item.PaymentObjectType,
-                        };
-
-                        position.Tax = new Tax { Type = VatType.None };
-
-                        //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                        //{
-                        //    position.Tax = new Tax { Type = item.TaxType.Value };
-                        //}
-
-                        items.Add(position);
-                    }
-
-                    var payments = new List<Payment>();
-                    payments.Add(new Payment
-                    {
-                        Sum = (double)subReceipt.Sum,
-                        Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
-                    });
-
-                    atolPrinter.ExecuteCommand(new PrintReceipt
-                    {
-                        Type = PrintReceiptCommand.Sell,
-                        TaxationType = subReceipt.Items.First().TaxationType.Value,
-                        Items = items,
-                        Payments = payments,
                         Operator = GetOperator()
                     });
+                }
+            }
+        }
+
+        public void PrintReceipt(Receipt receipt)
+        {
+            lock (_lock)
+            {
+                Check.NotNull(receipt, nameof(receipt));
+                Check.NotNull(receipt.Sum, nameof(receipt.Sum));
+
+                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+                if (servicesWithoutTaxation.Any())
+                {
+                    throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
+                }
+
+                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
+                {
+                    var subReceipt = new Receipt
+                    {
+                        Items = group.ToList(),
+                        IsPaydByCard = receipt.IsPaydByCard
+                    };
+
+                    _logger.Info("Печать чека.");
+
+                    using (var atolPrinter = new AtolWrapper(_logger, _config))
+                    {
+                        atolPrinter.Open();
+
+                        CheckShiftIsOpend(atolPrinter);
+
+                        var items = new List<PositionItem>();
+                        foreach (var item in subReceipt.Items)
+                        {
+                            var position = new PositionItem
+                            {
+                                Name = item.Description,
+                                Quantity = item.Quantity,
+                                Price = (double)item.UnitPrice,
+                                Amount = (double)item.Price,
+                                PaymentObject = item.PaymentObjectType,
+                            };
+
+                            position.Tax = new Tax { Type = VatType.None };
+
+                            //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            //{
+                            //    position.Tax = new Tax { Type = item.TaxType.Value };
+                            //}
+
+                            items.Add(position);
+                        }
+
+                        var payments = new List<Payment>();
+                        payments.Add(new Payment
+                        {
+                            Sum = (double)subReceipt.Sum,
+                            Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                        });
+
+                        atolPrinter.ExecuteCommand(new PrintReceipt
+                        {
+                            Type = PrintReceiptCommand.Sell,
+                            TaxationType = subReceipt.Items.First().TaxationType.Value,
+                            Items = items,
+                            Payments = payments,
+                            Operator = GetOperator()
+                        });
+                    }
                 }
             }
         }
 
         public void PrintRefund(Receipt receipt)
         {
-            Check.NotNull(receipt, nameof(receipt));
-            Check.NotNull(receipt.Sum, nameof(receipt.Sum));
-
-            var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
-            if (servicesWithoutTaxation.Any())
+            lock (_lock)
             {
-                throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
-            }
 
-            foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
-            {
-                var subReceipt = new Receipt
+                Check.NotNull(receipt, nameof(receipt));
+                Check.NotNull(receipt.Sum, nameof(receipt.Sum));
+
+                var servicesWithoutTaxation = receipt.Items.Where(x => x.TaxationType == null);
+                if (servicesWithoutTaxation.Any())
                 {
-                    Items = group.ToList(),
-                    IsPaydByCard = receipt.IsPaydByCard
-                };
+                    throw new InvalidOperationException($"Для некоторых услуг не указана 'Система налогообложения'.\n{String.Join("\n", servicesWithoutTaxation.Select(x => x.Description))}");
+                }
 
-                _logger.Info("Печать чека возврата.");
+                foreach (var group in receipt.Items.GroupBy(x => x.TaxationType))
+                {
+                    var subReceipt = new Receipt
+                    {
+                        Items = group.ToList(),
+                        IsPaydByCard = receipt.IsPaydByCard
+                    };
+
+                    _logger.Info("Печать чека возврата.");
+
+                    using (var atolPrinter = new AtolWrapper(_logger, _config))
+                    {
+                        atolPrinter.Open();
+
+                        CheckShiftIsOpend(atolPrinter);
+
+                        var items = new List<PositionItem>();
+                        foreach (var item in subReceipt.Items)
+                        {
+                            var position = new PositionItem
+                            {
+                                Name = item.Description,
+                                Quantity = item.Quantity,
+                                Price = (double)item.UnitPrice,
+                                Amount = (double)item.Price,
+                            };
+
+                            position.Tax = new Tax { Type = VatType.None };
+
+                            //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            //{
+                            //    position.Tax = new Tax { Type = item.TaxType.Value };
+                            //}
+
+                            items.Add(position);
+                        }
+
+
+                        var payments = new List<Payment>();
+                        payments.Add(new Payment
+                        {
+                            Sum = (double)subReceipt.Sum,
+                            Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                        });
+
+                        atolPrinter.ExecuteCommand(new PrintReceipt
+                        {
+                            Type = PrintReceiptCommand.SellReturn,
+                            TaxationType = subReceipt.Items.First().TaxationType.Value,
+                            Items = items,
+                            Payments = payments,
+                            Operator = GetOperator()
+                        });
+                    }
+                }
+            }
+        }
+
+        public void PrintCorrection(CorrectionReceipt receipt)
+        {
+            lock (_lock)
+            {
+                Check.NotNull(receipt, nameof(receipt));
+
+                _logger.Info("Печать чека коррекции.");
 
                 using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
@@ -161,156 +227,108 @@ namespace Skytecs.Hermes.Services
 
                     CheckShiftIsOpend(atolPrinter);
 
-                    var items = new List<PositionItem>();
-                    foreach (var item in subReceipt.Items)
+                    var payments = new List<Payment>
                     {
-                        var position = new PositionItem
+                        new Payment
                         {
-                            Name = item.Description,
-                            Quantity = item.Quantity,
-                            Price = (double)item.UnitPrice,
-                            Amount = (double)item.Price,
-                        };
+                            Sum = (double)receipt.Sum,
+                            Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
+                        }
+                    };
 
-                        position.Tax = new Tax { Type = VatType.None };
-
-                        //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                        //{
-                        //    position.Tax = new Tax { Type = item.TaxType.Value };
-                        //}
-
-                        items.Add(position);
-                    }
-
-
-                    var payments = new List<Payment>();
-                    payments.Add(new Payment
+                    var taxes = new List<Tax>
                     {
-                        Sum = (double)subReceipt.Sum,
-                        Type = subReceipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
-                    });
+                        new Tax
+                        {
+                            Type = receipt.TaxType
+                        }
+                    };
 
-                    atolPrinter.ExecuteCommand(new PrintReceipt
+                    var command = new PrintCorrectionReceipt
                     {
-                        Type = PrintReceiptCommand.SellReturn,
-                        TaxationType = subReceipt.Items.First().TaxationType.Value,
-                        Items = items,
+                        Type = PrintCorrectionReceiptCommandType.SellCorrection,
+                        Operator = GetOperator(),
                         Payments = payments,
-                        Operator = GetOperator()
-                    });
+                        Taxes = taxes,
+                        TaxationType = receipt.TaxationType
+                    };
+
+                    var version = atolPrinter.GetFFDVersion();
+                    if (version == "1.0.5" || version == "1.1")
+                    {
+                        if (version == "1.1")
+                        {
+                            if (!receipt.CorrectionType.HasValue)
+                            {
+                                throw new NullReferenceException($"Необходимо указать 'Тип коррекции'.");
+                            }
+                            if (String.IsNullOrEmpty(receipt.CorrectionBaseName))
+                            {
+                                throw new NullReferenceException($"Необходимо указать 'Описание коррекции'.");
+                            }
+                            if (!receipt.CorrectionBaseDate.HasValue)
+                            {
+                                throw new NullReferenceException($"Необходимо указать 'Дату документа'.");
+                            }
+                            if (String.IsNullOrEmpty(receipt.CorrectionBaseNumber))
+                            {
+                                throw new NullReferenceException($"Необходимо указать 'Номер документа'.");
+                            }
+                        }
+
+                        command.CorrectionType = receipt.CorrectionType.Value;
+                        command.CorrectionBaseName = receipt.CorrectionBaseName;
+                        command.CorrectionBaseDate = receipt.CorrectionBaseDate?.ToString("yyyy.MM.dd");
+                        command.CorrectionBaseNumber = receipt.CorrectionBaseNumber;
+                    }
+
+                    atolPrinter.ExecuteCommand(command);
                 }
-            }
-        }
-
-        public void PrintCorrection(CorrectionReceipt receipt)
-        {
-            Check.NotNull(receipt, nameof(receipt));
-
-            _logger.Info("Печать чека коррекции.");
-
-            using (var atolPrinter = new AtolWrapper(_logger, _config))
-            {
-                atolPrinter.Open();
-
-                CheckShiftIsOpend(atolPrinter);
-
-                var payments = new List<Payment>
-                {
-                    new Payment
-                    {
-                        Sum = (double)receipt.Sum,
-                        Type = receipt.IsPaydByCard ? PaymentType.Electronically : PaymentType.Cash
-                    }
-                };
-
-                var taxes = new List<Tax>
-                {
-                    new Tax
-                    {
-                        Type = receipt.TaxType
-                    }
-                };
-
-                var command = new PrintCorrectionReceipt
-                {
-                    Type = PrintCorrectionReceiptCommandType.SellCorrection,
-                    Operator = GetOperator(),
-                    Payments = payments,
-                    Taxes = taxes
-                };
-
-                var version = atolPrinter.GetFFDVersion();
-                if (version == "1.0.5" || version == "1.1")
-                {
-                    if (version == "1.1")
-                    {
-                        if (!receipt.CorrectionType.HasValue)
-                        {
-                            throw new NullReferenceException($"Необходимо указать 'Тип коррекции'.");
-                        }
-                        if (String.IsNullOrEmpty(receipt.CorrectionBaseName))
-                        {
-                            throw new NullReferenceException($"Необходимо указать 'Описание коррекции'.");
-                        }
-                        if (!receipt.CorrectionBaseDate.HasValue)
-                        {
-                            throw new NullReferenceException($"Необходимо указать 'Дату документа'.");
-                        }
-                        if (String.IsNullOrEmpty(receipt.CorrectionBaseNumber))
-                        {
-                            throw new NullReferenceException($"Необходимо указать 'Номер документа'.");
-                        }
-                    }
-
-                    command.CorrectionType = receipt.CorrectionType.Value;
-                    command.CorrectionBaseName = receipt.CorrectionBaseName;
-                    command.CorrectionBaseDate = receipt.CorrectionBaseDate?.ToString("yyyy.MM.dd");
-                    command.CorrectionBaseNumber = receipt.CorrectionBaseNumber;
-                }
-
-                atolPrinter.ExecuteCommand(command);
             }
         }
 
 
         public void PrintZReport()
         {
-            _logger.Info("Снятие Z-отчета.");
-
-            using (var atolPrinter = new AtolWrapper(_logger, _config))
+            lock (_lock)
             {
-                atolPrinter.Open();
-                atolPrinter.ExecuteCommand(new CloseShift
+                _logger.Info("Снятие Z-отчета.");
+
+                using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
-                    Operator = GetOperator()
-                });
+                    atolPrinter.Open();
+                    atolPrinter.ExecuteCommand(new CloseShift
+                    {
+                        Operator = GetOperator()
+                    });
+                }
+
+                _logger.Info("Печать Z-отчета завершена успешно.\nУдаление данных о текущей смене.");
+                _sessionStorage.Remove();
+                _logger.Info("Удаление данных о текущей смене завершено.");
             }
-
-            _logger.Info("Печать Z-отчета завершена успешно.\nУдаление данных о текущей смене.");
-            _sessionStorage.Remove();
-            _logger.Info("Удаление данных о текущей смене завершено.");
-
-
         }
 
         public void PrintXReport()
         {
-            _logger.Info("Снятие X-отчета.");
-
-            using (var atolPrinter = new AtolWrapper(_logger, _config))
+            lock (_lock)
             {
-                atolPrinter.Open();
+                _logger.Info("Снятие X-отчета.");
 
-                CheckShiftIsOpend(atolPrinter);
-
-                atolPrinter.ExecuteCommand(new PrintXReport
+                using (var atolPrinter = new AtolWrapper(_logger, _config))
                 {
-                    Operator = GetOperator()
-                });
+                    atolPrinter.Open();
+
+                    CheckShiftIsOpend(atolPrinter);
+
+                    atolPrinter.ExecuteCommand(new PrintXReport
+                    {
+                        Operator = GetOperator()
+                    });
+                }
+
+                _logger.Info("Печать X-отчета завершена успешно.");
             }
-
-            _logger.Info("Печать X-отчета завершена успешно.");
-
         }
 
         private void CheckShiftIsOpend(AtolWrapper printer)
@@ -475,6 +493,7 @@ namespace Skytecs.Hermes.Services
         public decimal Sum { get; set; }
         public bool IsPaydByCard { get; set; }
         public VatType TaxType { get; set; }
+        public TaxationType TaxationType { get; set; }
         public CorrectionType? CorrectionType { get; set; }
         public string CorrectionBaseName { get; set; }
         public DateTime? CorrectionBaseDate { get; set; }
@@ -932,6 +951,9 @@ namespace Skytecs.Hermes.Services
 
         [DataMember(Name = "taxes")]
         public IList<Tax> Taxes { get; set; }
+
+        [DataMember(Name = "taxationType")]
+        public TaxationType TaxationType { get; set; }
     }
 
 
@@ -1018,6 +1040,19 @@ namespace Skytecs.Hermes.Services
         [DataMember(Name = "serial")]
         public string Serial { get; set; }
     }
+
+
+    [DataContract]
+    public class ContinuePrint : FiscalPrinterCommand<ContinuePrintCommandType>
+    {
+    }
+    public enum ContinuePrintCommandType
+    {
+        [EnumMember(Value = "continuePrint")] ContinuePrint,
+    }
+
+
+    //getDeviceStatus
 
 
     #endregion
