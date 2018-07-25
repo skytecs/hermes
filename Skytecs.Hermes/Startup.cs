@@ -194,7 +194,8 @@ namespace Skytecs.Hermes
                         _fiscalPrinterService.PrintZReport();
                         break;
                     case "correction":
-                        _fiscalPrinterService.PrintZReport();
+                        var correction = JsonConvert.DeserializeObject<CorrectionReceipt>(parameters);
+                        _fiscalPrinterService.PrintCorrection(correction);
                         break;
 
                     case "labels":
