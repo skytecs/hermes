@@ -111,12 +111,13 @@ namespace Skytecs.Hermes.Services
                                 PaymentObject = item.PaymentObjectType,
                             };
 
-                            position.Tax = new Tax { Type = VatType.None };
+                            var taxType = VatType.None;
+                            if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            {
+                                taxType = item.TaxType.Value;
+                            }
 
-                            //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                            //{
-                            //    position.Tax = new Tax { Type = item.TaxType.Value };
-                            //}
+                            position.Tax = new Tax { Type = taxType };
 
                             items.Add(position);
                         }
@@ -135,6 +136,7 @@ namespace Skytecs.Hermes.Services
                             Items = items,
                             Payments = payments,
                             Operator = GetOperator()
+
                         });
                     }
                 }
@@ -182,12 +184,13 @@ namespace Skytecs.Hermes.Services
                                 Amount = (double)item.Price,
                             };
 
-                            position.Tax = new Tax { Type = VatType.None };
+                            var taxType = VatType.None;
+                            if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            {
+                                taxType = item.TaxType.Value;
+                            }
 
-                            //if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
-                            //{
-                            //    position.Tax = new Tax { Type = item.TaxType.Value };
-                            //}
+                            position.Tax = new Tax { Type = taxType };
 
                             items.Add(position);
                         }
@@ -642,7 +645,10 @@ namespace Skytecs.Hermes.Services
         [EnumMember(Value = "vat10")] Vat10 = 3,
         [EnumMember(Value = "vat18")] Vat18 = 4,
         [EnumMember(Value = "vat110")] Vat110 = 5,
-        [EnumMember(Value = "vat118")] Vat118 = 6
+        [EnumMember(Value = "vat118")] Vat118 = 6,
+        [EnumMember(Value = "vat20")] vat20 = 7,
+        [EnumMember(Value = "vat120")] vat120 = 8
+
     }
 
     [DataContract]
@@ -898,6 +904,19 @@ namespace Skytecs.Hermes.Services
 
         [DataMember(Name = "total")]
         public double? Total { get; set; }
+
+        [DataMember(Name = "electronically")]
+        public bool Electronically { get; set; }
+
+        [DataMember(Name="clientInfo")]
+        public ClientInfo ClientInfo { get; set; }
+    }
+
+    [DataContract]
+    public class ClientInfo
+    {
+        [DataMember(Name="emailOrPhone")]
+        public string EmailOrPhone { get; set; }
     }
 
     [DataContract]
