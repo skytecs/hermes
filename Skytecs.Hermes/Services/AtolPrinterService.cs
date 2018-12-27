@@ -112,9 +112,9 @@ namespace Skytecs.Hermes.Services
                             };
 
                             var taxType = VatType.None;
-                            if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            if (item.TaxationType == TaxationType.Osn)
                             {
-                                taxType = item.TaxType.Value;
+                                taxType = item.TaxType ?? VatType.Vat20;
                             }
 
                             position.Tax = new Tax { Type = taxType };
@@ -185,9 +185,9 @@ namespace Skytecs.Hermes.Services
                             };
 
                             var taxType = VatType.None;
-                            if (subReceipt.Items.First().TaxationType == TaxationType.Osn && item.TaxType.HasValue)
+                            if (item.TaxationType == TaxationType.Osn)
                             {
-                                taxType = item.TaxType.Value;
+                                taxType = item.TaxType ?? VatType.Vat20;
                             }
 
                             position.Tax = new Tax { Type = taxType };
@@ -646,8 +646,8 @@ namespace Skytecs.Hermes.Services
         [EnumMember(Value = "vat18")] Vat18 = 4,
         [EnumMember(Value = "vat110")] Vat110 = 5,
         [EnumMember(Value = "vat118")] Vat118 = 6,
-        [EnumMember(Value = "vat20")] vat20 = 7,
-        [EnumMember(Value = "vat120")] vat120 = 8
+        [EnumMember(Value = "vat20")] Vat20 = 7,
+        [EnumMember(Value = "vat120")] Vat120 = 8
 
     }
 
