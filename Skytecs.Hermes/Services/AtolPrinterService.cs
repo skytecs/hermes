@@ -135,7 +135,8 @@ namespace Skytecs.Hermes.Services
                             TaxationType = subReceipt.Items.First().TaxationType.Value,
                             Items = items,
                             Payments = payments,
-                            Operator = GetOperator()
+                            Operator = GetOperator(),
+                            //ClientInfo = new ClientInfo { EmailOrPhone = "" }
 
                         });
                     }
@@ -230,6 +231,8 @@ namespace Skytecs.Hermes.Services
 
                     CheckShiftIsOpend(atolPrinter);
 
+                    var items = new List<PositionItem>();
+
                     var payments = new List<Payment>
                     {
                         new Payment
@@ -243,47 +246,46 @@ namespace Skytecs.Hermes.Services
                     {
                         new Tax
                         {
-                            Type = receipt.TaxType
+                            Type = receipt.TaxType,
+                            Sum = (double)receipt.Sum
                         }
                     };
 
                     var command = new PrintCorrectionReceipt
                     {
-                        Type = PrintCorrectionReceiptCommandType.SellCorrection,
+                        Type = receipt.Type,
                         Operator = GetOperator(),
+                        Items = items,
                         Payments = payments,
                         Taxes = taxes,
                         TaxationType = receipt.TaxationType
                     };
 
                     var version = atolPrinter.GetFFDVersion();
-                    if (version == "1.0.5" || version == "1.1")
+                    if (version == "1.1")
                     {
-                        if (version == "1.1")
+                        if (!receipt.CorrectionType.HasValue)
                         {
-                            if (!receipt.CorrectionType.HasValue)
-                            {
-                                throw new NullReferenceException($"Необходимо указать 'Тип коррекции'.");
-                            }
-                            if (String.IsNullOrEmpty(receipt.CorrectionBaseName))
-                            {
-                                throw new NullReferenceException($"Необходимо указать 'Описание коррекции'.");
-                            }
-                            if (!receipt.CorrectionBaseDate.HasValue)
-                            {
-                                throw new NullReferenceException($"Необходимо указать 'Дату документа'.");
-                            }
-                            if (String.IsNullOrEmpty(receipt.CorrectionBaseNumber))
-                            {
-                                throw new NullReferenceException($"Необходимо указать 'Номер документа'.");
-                            }
+                            throw new NullReferenceException($"Необходимо указать 'Тип коррекции'.");
                         }
-
-                        command.CorrectionType = receipt.CorrectionType.Value;
-                        command.CorrectionBaseName = receipt.CorrectionBaseName;
-                        command.CorrectionBaseDate = receipt.CorrectionBaseDate?.ToString("yyyy.MM.dd");
-                        command.CorrectionBaseNumber = receipt.CorrectionBaseNumber;
+                        if (String.IsNullOrEmpty(receipt.CorrectionBaseName))
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Описание коррекции'.");
+                        }
+                        if (!receipt.CorrectionBaseDate.HasValue)
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Дату документа'.");
+                        }
+                        if (String.IsNullOrEmpty(receipt.CorrectionBaseNumber))
+                        {
+                            throw new NullReferenceException($"Необходимо указать 'Номер документа'.");
+                        }
                     }
+
+                    command.CorrectionType = receipt.CorrectionType;
+                    command.CorrectionBaseName = receipt.CorrectionBaseName;
+                    command.CorrectionBaseDate = receipt.CorrectionBaseDate?.ToString("yyyy.MM.dd");
+                    command.CorrectionBaseNumber = receipt.CorrectionBaseNumber;
 
                     atolPrinter.ExecuteCommand(command);
                 }
@@ -493,6 +495,8 @@ namespace Skytecs.Hermes.Services
 
     public class CorrectionReceipt
     {
+        public PrintCorrectionReceiptCommandType Type { get; set; }
+
         public decimal Sum { get; set; }
         public bool IsPaydByCard { get; set; }
         public VatType TaxType { get; set; }
@@ -635,6 +639,8 @@ namespace Skytecs.Hermes.Services
     {
         [DataMember(Name = "type")]
         public VatType Type { get; set; }
+        [DataMember(Name = "sum")]
+        public double? Sum { get; set; }
     }
 
     [DataContract]
@@ -908,14 +914,14 @@ namespace Skytecs.Hermes.Services
         [DataMember(Name = "electronically")]
         public bool Electronically { get; set; }
 
-        [DataMember(Name="clientInfo")]
+        [DataMember(Name = "clientInfo")]
         public ClientInfo ClientInfo { get; set; }
     }
 
     [DataContract]
     public class ClientInfo
     {
-        [DataMember(Name="emailOrPhone")]
+        [DataMember(Name = "emailOrPhone")]
         public string EmailOrPhone { get; set; }
     }
 
@@ -964,6 +970,9 @@ namespace Skytecs.Hermes.Services
 
         [DataMember(Name = "correctionBaseName")]
         public string CorrectionBaseName { get; set; }
+
+        [DataMember(Name = "items")]
+        public ICollection<PositionItem> Items { get; set; }
 
         [DataMember(Name = "payments")]
         public IList<Payment> Payments { get; set; }
