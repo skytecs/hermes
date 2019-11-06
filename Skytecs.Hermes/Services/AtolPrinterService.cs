@@ -242,12 +242,28 @@ namespace Skytecs.Hermes.Services
                         }
                     };
 
+                    var taxSum = 0.0;
+
+                    switch (receipt.TaxType)
+                    {
+                        case VatType.Vat20:
+                            taxSum = Math.Round((double)receipt.Sum / 6.0, 2);
+                            break;
+                        case VatType.None:
+                        case VatType.Vat0:
+                            taxSum = (double)receipt.Sum;
+                            break;
+                        default:
+                            throw new NotSupportedException($"TaxType {receipt.TaxType} is not supported");
+                    }
+
                     var taxes = new List<Tax>
                     {
                         new Tax
                         {
                             Type = receipt.TaxType,
-                            Sum = (double)receipt.Sum
+                            
+                            Sum = taxSum
                         }
                     };
 
@@ -255,7 +271,7 @@ namespace Skytecs.Hermes.Services
                     {
                         Type = receipt.Type,
                         Operator = GetOperator(),
-                        Items = items,
+                        //Items = new PositionItem { },
                         Payments = payments,
                         Taxes = taxes,
                         TaxationType = receipt.TaxationType
@@ -649,9 +665,7 @@ namespace Skytecs.Hermes.Services
         [EnumMember(Value = "none")] None = 1,
         [EnumMember(Value = "vat0")] Vat0 = 2,
         [EnumMember(Value = "vat10")] Vat10 = 3,
-        [EnumMember(Value = "vat18")] Vat18 = 4,
         [EnumMember(Value = "vat110")] Vat110 = 5,
-        [EnumMember(Value = "vat118")] Vat118 = 6,
         [EnumMember(Value = "vat20")] Vat20 = 7,
         [EnumMember(Value = "vat120")] Vat120 = 8
 
@@ -971,8 +985,8 @@ namespace Skytecs.Hermes.Services
         [DataMember(Name = "correctionBaseName")]
         public string CorrectionBaseName { get; set; }
 
-        [DataMember(Name = "items")]
-        public ICollection<PositionItem> Items { get; set; }
+        //[DataMember(Name = "items")]
+        //public ICollection<PositionItem> Items { get; set; }
 
         [DataMember(Name = "payments")]
         public IList<Payment> Payments { get; set; }
