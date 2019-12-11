@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
     <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,6 +17,7 @@
 
   <ItemGroup>
     <None Remove="fptr10.dll" />
+    <None Remove="nlog.config.production" />
     <None Remove="Session.xml" />
   </ItemGroup>
 
@@ -32,6 +35,9 @@
 
   <ItemGroup>
     <Content Include="fptr10.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="nlog.config.production">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

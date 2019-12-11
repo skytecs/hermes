@@ -34,13 +34,15 @@
         <Directory Id="MyPatients" Name="MyPatients">
           <Directory Id="INSTALLLOCATION" Name="$(var.Name)">
 
-            <!--<Component Id="MainProduct" Guid="416A22A9-33F6-4FB3-91E6-DA2F63CC4CE3">-->
+            <Component Id="NeverOverwritingFiles" Guid="2D1C3C81-1599-43A5-8C9A-1EF6440E9B57" NeverOverwrite="yes" Permanent="yes" >
+              <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" DiskId="1" />
+            </Component>
+            
             <Component Id="MainProduct" Guid="A4BE6E50-A9E5-4000-8E32-DF8BF057A374">
               <File Id="Skytecs.Hermes.exe" Source="$(var.SourcePath)\Skytecs.Hermes.exe" DiskId="1" KeyPath="yes"/>
               <File Id="Skytecs.Hermes.exe.config" Source="$(var.SourcePath)\Skytecs.Hermes.exe.config" DiskId="1"/>
-              <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" DiskId="1" />
               <File Id="app.config" Source="$(var.SourcePath)\app.config" DiskId="1" />
-              <File Id="nlog.config" Source="$(var.SourcePath)\nlog.config" DiskId="1" />
+              <File Id="nlog.config" Source="$(var.SourcePath)\nlog.config.production" Name="nlog.config" DiskId="1" />
 
               <!--
               <File Id="" Source="$(var.SourcePath)\" DiskId="1" />
@@ -186,7 +188,7 @@
               <File Id="Remotion.Linq.dll" Source="$(var.SourcePath)\Remotion.Linq.dll" DiskId="1" />
               <File Id="sqlite3.dll" Source="$(var.SourcePath)\sqlite3.dll" DiskId="1" />
 
-              <!-- Tell WiX to install the Service -->
+            <!-- Tell WiX to install the Service -->
               <ServiceInstall Id="ServiceInstaller"
                               Type="ownProcess"
                               Name="$(var.Name)"
@@ -200,18 +202,18 @@
               </ServiceInstall>
               <!-- Tell WiX to start the Service -->
               <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="$(var.Name)" Wait="no" />
-
             </Component>
+
           </Directory>
         </Directory>
       </Directory>
     </Directory>
 
-
     <Feature Id="ServiceFeature" Title="Service for cashbox devices" Level="1">
+      <ComponentRef Id="NeverOverwritingFiles" />
       <ComponentRef Id="MainProduct" />
     </Feature>
-  </Product>
 
+  </Product>
 </Wix>
 

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      autoReload="true"
+      internalLogLevel="Trace"
+      internalLogFile="c:\temp\internal-nlog.txt">
+
+  <!-- Load the ASP.NET Core plugin -->
+  <extensions>
+    <add assembly="NLog.Web.AspNetCore"/>
+    <add assembly="WeblogTarget" />
+  </extensions>
+
+  <targets>
+    <target name="telemetry"
+        xsi:type="AsyncWrapper"
+        queueLimit="100000"
+        timeToSleepBetweenBatches="50"
+        batchSize="10"
+        overflowAction="Block">
+      <target name="logstash"
+              type="Network"
+              address="https://telemetry.skytecs.ru"
+              newLine="True">
+        <layout type="JsonLayout">
+          <!-- name of the app -->
+          <attribute name="app" layout="${appdomain:format={1\}}" />
+          <attribute name="hostingEnv" layout="prod"/>
+          <attribute name="timestamp" layout="${longdate}" />
+          <attribute name="logger" layout="${logger}" />
+          <attribute name="machinename" layout="${machinename}" />
+          <attribute name="threadid" layout="${threadid}" />
+          <!--<attribute name="request-ip" layout="${aspnet-request-ip}" />-->
+          <attribute name="level" layout="${level}"/>
+          <attribute name="message" layout="${message}" />
+          <attribute name="exception" layout="${exception}" />
+          <attribute name="stacktrace" layout="${onexception:inner=${stacktrace}}"/>
+          <attribute name="version" layout="${assembly-version}" />
+
+          <!--<attribute name="trace-identifier" layout="${aspnet-TraceIdentifier}"/>
+            <attribute name="user-identity" layout="${aspnet-user-identity}"/>
+            <attribute name="mvc-controller" layout="${aspnet-mvc-controller}"/>
+            <attribute name="mvc-action" layout="${aspnet-mvc-action}"/>-->
+        </layout>
+      </target>
+    </target>
+
+  </targets>
+  <rules>
+    <!--<logger name="Default" minlevel="Trace" writeTo="PrimaryLog" />-->
+    <logger name="*" minlevel="Info" writeTo="telemetry" />
+  </rules>
+</nlog>

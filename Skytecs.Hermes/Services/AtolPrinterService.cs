@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using System.Runtime.Serialization;
 
-namespace Skytecs.Hermes.Services
+namespace Skytecs.Hermes.Services.Atol
 {
     public class AtolPrinterService : IFiscalPrinterService
     {

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Skytecs.Hermes.Services.AtolV2;
 using Skytecs.Hermes.Utilities;
 using System;
 using System.Collections.Generic;
@@ -11,24 +12,24 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Skytecs.Hermes.Services.Atol
+namespace Skytecs.Hermes.Services.AtolV2
 {
-    public class AtolWrapper : IDisposable
+    public class AtolWrapperV2 : IDisposable
     {
-        private readonly ILogger<AtolPrinterService> _logger;
+        private readonly ILogger<AtolPrinterV2Service> _logger;
 
     
         private IntPtr _fptr;
         private int _deviceId;
 
-        public AtolWrapper(ILogger<AtolPrinterService> logger, IOptions<FiscalPrinterSettings> config)
+        public AtolWrapperV2(ILogger<AtolPrinterV2Service> logger, IOptions<FiscalPrinterSettings> config)
             : this(config.Value.Port, config.Value.DeviceId)
         {
             Check.NotNull(logger, nameof(logger));
             _logger = logger;
         }
 
-        public AtolWrapper(int portNumber, int deviceId)
+        public AtolWrapperV2(int portNumber, int deviceId)
         {
             _deviceId = deviceId;
 
@@ -230,7 +231,7 @@ namespace Skytecs.Hermes.Services.Atol
             GC.SuppressFinalize(this);
         }
 
-        ~AtolWrapper()
+        ~AtolWrapperV2()
         {
             ReleaseUnmanagedResources();
         }

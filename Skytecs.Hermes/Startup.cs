@@ -25,6 +25,8 @@ using RestSharp;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
+using Skytecs.Hermes.Services.Atol;
+using Skytecs.Hermes.Services.AtolV2;
 
 namespace Skytecs.Hermes
 {
@@ -60,6 +62,7 @@ namespace Skytecs.Hermes
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<IFiscalPrinterService, AtolPrinterService>();
+            services.AddTransient<IFiscalPrinterV2Service, AtolPrinterV2Service>();
             services.AddTransient<ISessionStorage, TempStorage>();
             services.AddSingleton<CentrifugoClient>();
             services.AddTransient<IBarcodePrinterService, ZebraPrinterService>();
@@ -136,12 +139,12 @@ namespace Skytecs.Hermes
     public class FiscalPrinterNotificationHandler : ICentrifugoHandler
     {
         private readonly ILogger<FiscalPrinterNotificationHandler> _logger;
-        private readonly IFiscalPrinterService _fiscalPrinterService;
+        private readonly IFiscalPrinterV2Service _fiscalPrinterService;
         private readonly IBarcodePrinterService _barcodePrinterService;
         private readonly string _clinicUrl;
         private readonly DataContext _dataContext;
 
-        public FiscalPrinterNotificationHandler(ILogger<FiscalPrinterNotificationHandler> logger, IFiscalPrinterService fiscalPrinterService, IBarcodePrinterService barcodePrinterService, DataContext dataContext, IOptions<CommonSettings> settings)
+        public FiscalPrinterNotificationHandler(ILogger<FiscalPrinterNotificationHandler> logger, IFiscalPrinterV2Service fiscalPrinterService, IBarcodePrinterService barcodePrinterService, DataContext dataContext, IOptions<CommonSettings> settings)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _fiscalPrinterService = fiscalPrinterService ?? throw new ArgumentNullException(nameof(fiscalPrinterService));
@@ -180,11 +183,11 @@ namespace Skytecs.Hermes
                         _fiscalPrinterService.OpenSession(openSessionData.CashierId, openSessionData.CashierName);
                         break;
                     case "receipt":
-                        var receipt = JsonConvert.DeserializeObject<Receipt>(parameters);
+                        var receipt = JsonConvert.DeserializeObject<ReceiptV2>(parameters);
                         _fiscalPrinterService.PrintReceipt(receipt);
                         break;
                     case "refund":
-                        var refund = JsonConvert.DeserializeObject<Receipt>(parameters);
+                        var refund = JsonConvert.DeserializeObject<ReceiptV2>(parameters);
                         _fiscalPrinterService.PrintRefund(refund);
                         break;
                     case "xreport":
@@ -194,7 +197,7 @@ namespace Skytecs.Hermes
                         _fiscalPrinterService.PrintZReport();
                         break;
                     case "correction":
-                        var correction = JsonConvert.DeserializeObject<CorrectionReceipt>(parameters);
+                        var correction = JsonConvert.DeserializeObject<Services.AtolV2.CorrectionReceipt>(parameters);
                         _fiscalPrinterService.PrintCorrection(correction);
                         break;
 

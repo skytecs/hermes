@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using System.Linq;
+using Skytecs.Hermes.Services.Atol;
 
 namespace Skytecs.Hermes.Controllers
 {
